@@ -123,3 +123,25 @@ git diff --check passed with no whitespace errors.
 ```
 
 The unit tests execute the compiled deterministic mismatch guard and cover acceptance, rejection, review, missing metadata, and both threshold boundaries. No PostgreSQL, provider, or application integration was added or required for Stage 5.
+
+## Stage 6 OpenAI vision provider verification
+
+The following commands were executed successfully:
+
+```bash
+npm run typecheck
+npm run build
+npm run test:unit
+git diff --check
+```
+
+Results:
+
+```text
+TypeScript typecheck passed.
+TypeScript build passed.
+19 unit tests passed, 0 failed.
+git diff --check passed with no whitespace errors.
+```
+
+The unit tests cover valid structured output, empty required fields, invalid attributes, out-of-range confidence, and valid low-confidence output. Tests use no real OpenAI API call. Live provider/API behavior remains unverified.

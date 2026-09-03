@@ -37,3 +37,12 @@
 - Added the small `MatchingResult` and candidate-context contracts needed by a later orchestration stage without implementing orchestration.
 - Added focused Node built-in unit tests for guard outcomes, missing metadata, and threshold boundaries.
 - Did not add runtime provider validation, OpenAI, database access, repositories, embeddings, vector search, queues, HTTP, or business workflows.
+
+## 2026-09-03 — Stage 6 OpenAI vision provider
+
+- Added the official OpenAI Node.js SDK and Zod.
+- Added a focused OpenAI vision provider accepting an image URL and requesting strict structured output using `gpt-4.1-mini`.
+- Added provider-boundary Zod validation and normalization into the existing provider-neutral `ImageMetadata` domain type.
+- Classified provider/API failures separately from invalid model output; valid low-confidence output remains valid metadata.
+- Added offline unit tests for valid, invalid, and low-confidence structured responses without making a real API call.
+- Did not add embeddings, persistence changes, repository changes, vector search, queues, routes, matching orchestration, or AI usage tracking.

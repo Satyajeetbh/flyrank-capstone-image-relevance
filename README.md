@@ -4,7 +4,7 @@ This repository contains the TypeScript foundation, Stage 2 PostgreSQL persisten
 
 ## Current scope
 
-Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. It does not implement API endpoints, OpenAI integration, Redis/BullMQ, future-stage repositories, services, vector search, matching orchestration, or application business logic.
+Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. Stage 6 adds the OpenAI vision provider and Zod validation boundary for image understanding. It does not implement API endpoints, Redis/BullMQ, future-stage repositories, services, vector search, matching orchestration, embeddings, or application business logic.
 
 The embedding decision for the persistence schema is authoritative: OpenAI `text-embedding-3-small`, stored as `vector(1536)` for both image and post embeddings. This records the storage contract only; provider integration is a future stage.
 
@@ -23,8 +23,9 @@ Copy `.env.example` to `.env` and adjust local values if needed:
 - `POSTGRES_DB` — database name; defaults to `flyrank`
 - `POSTGRES_USER` — database user; defaults to `flyrank`
 - `POSTGRES_PASSWORD` — local database password; defaults to `flyrank_local_password`
+- `OPENAI_API_KEY` — required only when calling the OpenAI vision provider
 
-The Compose file uses the same variables with local defaults. `.env` is ignored by Git.
+The Compose file uses the same database variables with local defaults. `.env` is ignored by Git. Never commit API keys.
 
 ## Start PostgreSQL
 
@@ -89,7 +90,15 @@ The verification creates unique image and post rows, retrieves and lists them, u
 npm run test:unit
 ```
 
-The unit tests execute the compiled deterministic guard with Node's built-in test runner and cover decision, reason-code, and threshold-boundary behavior.
+The unit tests execute the compiled deterministic guard and OpenAI provider parsing boundary with Node's built-in test runner. They do not call the real OpenAI API.
+
+## Stage 6 OpenAI vision provider
+
+The provider accepts an image URL and requests structured image-understanding output from the configured OpenAI vision-capable model. Zod validates and normalizes the response into provider-neutral `ImageMetadata` before it reaches the domain layer.
+
+Provider/API failures and invalid model output are classified separately. Valid low-confidence metadata remains valid output; the deterministic mismatch guard remains responsible for deciding whether it should be accepted, rejected, or reviewed. Embeddings are intentionally not part of Stage 6.
+
+The selected model is `gpt-4.1-mini`, defined in `src/providers/openai-vision.ts` so it can be changed in a later stage without introducing model-selection infrastructure.
 
 ## TypeScript verification
 
