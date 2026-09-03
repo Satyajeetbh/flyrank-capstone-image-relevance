@@ -9,3 +9,12 @@
 - Added UUID primary keys, foreign keys, timestamps, status checks, confidence/similarity checks, JSONB image attributes, and `vector(1536)` embedding columns.
 - Kept migration execution dependency-free; no ORM or migration runner was added because ordered `psql` commands are sufficient at this stage.
 - Did not add OpenAI integration, repositories, services, controllers, routes, Redis, BullMQ, matching logic, mismatch guard logic, or business logic.
+
+## 2026-09-03 — Stage 3 PostgreSQL application integration
+
+- AI-assisted implementation of the minimal PostgreSQL application access boundary.
+- Added the standard `pg` client and `@types/pg` declarations.
+- Added a module-level PostgreSQL pool under `src/infrastructure/database.ts` using required environment variables and credential-safe error handling.
+- Added a `SELECT 1` connectivity check and a standalone resource-safe verification script at `scripts/verify-database.mjs`.
+- Added the `verify:db` npm script; no ORM or migration runner was introduced.
+- Did not add repositories, services, routes, provider calls, queues, or application business logic.

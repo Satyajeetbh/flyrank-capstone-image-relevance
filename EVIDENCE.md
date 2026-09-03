@@ -36,3 +36,38 @@ These commands complete successfully against the existing TypeScript foundation.
 ## Scope note
 
 No OpenAI calls, application services, repositories, API routes, queues, matching logic, mismatch guard logic, authentication tables, match runs, subject taxonomy, or post-understanding pipeline were added.
+
+## Stage 3 PostgreSQL application integration
+
+The following commands were executed successfully:
+
+```bash
+docker compose ps postgres
+```
+
+Result:
+
+```text
+flyrank-capstone-image-relevance-postgres-1   pgvector/pgvector:pg16   Up 3 hours (healthy)   0.0.0.0:5432->5432/tcp
+```
+
+The application connectivity check was run with the documented local values:
+
+```bash
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run verify:db
+```
+
+Result:
+
+```text
+Database connectivity check passed.
+```
+
+The check builds the TypeScript module, executes `SELECT 1` through the shared pool, and closes the pool in a `finally` block. Failures return a non-zero exit code without logging credentials or raw database errors.
+
+TypeScript verification also passed:
+
+```bash
+npm run typecheck
+npm run build
+```

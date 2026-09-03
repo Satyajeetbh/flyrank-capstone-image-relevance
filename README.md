@@ -1,10 +1,10 @@
 # FlyRank AI Image Understanding & Content Matching Engine
 
-This repository contains the TypeScript foundation and Stage 2 PostgreSQL persistence layer for the FlyRank capstone project.
+This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, and Stage 3 PostgreSQL application access layer for the FlyRank capstone project.
 
 ## Current scope
 
-Stage 2 establishes PostgreSQL locally and the initial versioned schema. It does not implement API endpoints, OpenAI integration, Redis/BullMQ, repositories, services, matching logic, mismatch guard logic, or application business logic.
+Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. It does not implement API endpoints, OpenAI integration, Redis/BullMQ, repositories, services, matching logic, mismatch guard logic, or application business logic.
 
 The embedding decision for the persistence schema is authoritative: OpenAI `text-embedding-3-small`, stored as `vector(1536)` for both image and post embeddings. This records the storage contract only; provider integration is a future stage.
 
@@ -56,6 +56,16 @@ docker compose exec -T postgres psql -U flyrank -d flyrank -c "SELECT extname FR
 docker compose exec -T postgres psql -U flyrank -d flyrank -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;"
 docker compose exec -T postgres psql -U flyrank -d flyrank -c "SELECT table_name, column_name, udt_name FROM information_schema.columns WHERE table_name IN ('image_embeddings', 'post_embeddings') AND column_name = 'embedding' ORDER BY table_name;"
 ```
+
+## Application database check
+
+The infrastructure database module requires `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`. Set these variables in the shell before running the check; `.env` is not loaded automatically by Node.
+
+```bash
+npm run verify:db
+```
+
+The command builds the TypeScript source, executes `SELECT 1` through the shared pool, and closes the pool. It exits non-zero if configuration is missing or PostgreSQL is unreachable.
 
 ## TypeScript verification
 
