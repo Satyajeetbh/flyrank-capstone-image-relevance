@@ -37,6 +37,36 @@ These commands complete successfully against the existing TypeScript foundation.
 
 No OpenAI calls, application services, repositories, API routes, queues, matching logic, mismatch guard logic, authentication tables, match runs, subject taxonomy, or post-understanding pipeline were added.
 
+## Stage 4 repository verification
+
+The following commands were executed successfully against the running PostgreSQL container:
+
+```bash
+docker compose ps postgres
+```
+
+The PostgreSQL service reported `Up (healthy)` using the `pgvector/pgvector:pg16` image.
+
+```bash
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run verify:repositories
+```
+
+Result:
+
+```text
+Repository integration verification passed.
+```
+
+The verification created unique image and post records, retrieved each by ID, listed each entity, updated the image to `completed`, deleted the inserted records, and closed the shared pool.
+
+TypeScript and diff verification also passed:
+
+```bash
+npm run typecheck
+npm run build
+git diff --check
+```
+
 ## Stage 3 PostgreSQL application integration
 
 The following commands were executed successfully:

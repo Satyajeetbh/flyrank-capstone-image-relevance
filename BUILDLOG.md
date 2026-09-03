@@ -18,3 +18,13 @@
 - Added a `SELECT 1` connectivity check and a standalone resource-safe verification script at `scripts/verify-database.mjs`.
 - Added the `verify:db` npm script; no ORM or migration runner was introduced.
 - Did not add repositories, services, routes, provider calls, queues, or application business logic.
+
+## 2026-09-03 — Stage 4 core repository/data-access layer
+
+- AI-assisted implementation of the bounded core data-access layer.
+- Added typed `ImageRepository` operations for create, find by ID, list, and processing-status update.
+- Added typed `PostRepository` operations for create, find by ID, and list.
+- Reused the existing shared PostgreSQL pool and used explicit columns with parameterized SQL throughout.
+- Added a standalone repository integration verification with unique test data and cleanup.
+- Did not modify migrations or add repositories for the other seven schema entities.
+- Did not add future-stage AI, matching, guard, queue, worker, HTTP, or application business logic.

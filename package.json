@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc --pretty",
     "typecheck": "tsc --noEmit --pretty",
-    "verify:db": "npm run build && node scripts/verify-database.mjs"
+    "verify:db": "npm run build && node scripts/verify-database.mjs",
+    "verify:repositories": "npm run build && node scripts/verify-repositories.mjs"
   },
   "keywords": [
     "typescript",

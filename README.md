@@ -1,10 +1,10 @@
 # FlyRank AI Image Understanding & Content Matching Engine
 
-This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, and Stage 3 PostgreSQL application access layer for the FlyRank capstone project.
+This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, and Stage 4 core repositories for the FlyRank capstone project.
 
 ## Current scope
 
-Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. It does not implement API endpoints, OpenAI integration, Redis/BullMQ, repositories, services, matching logic, mismatch guard logic, or application business logic.
+Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. It does not implement API endpoints, OpenAI integration, Redis/BullMQ, future-stage repositories, services, matching logic, mismatch guard logic, or application business logic.
 
 The embedding decision for the persistence schema is authoritative: OpenAI `text-embedding-3-small`, stored as `vector(1536)` for both image and post embeddings. This records the storage contract only; provider integration is a future stage.
 
@@ -66,6 +66,16 @@ npm run verify:db
 ```
 
 The command builds the TypeScript source, executes `SELECT 1` through the shared pool, and closes the pool. It exits non-zero if configuration is missing or PostgreSQL is unreachable.
+
+## Repository verification
+
+After PostgreSQL is running and migrations have been applied, set the required database variables and run:
+
+```bash
+npm run verify:repositories
+```
+
+The verification creates unique image and post rows, retrieves and lists them, updates the image processing status, and removes the inserted rows afterward.
 
 ## TypeScript verification
 
