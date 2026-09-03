@@ -253,3 +253,33 @@ git diff --check passed with no whitespace errors.
 ```
 
 The Stage 11 integration test verified that every evaluated candidate is persisted with the explicit lowercase guard status, reason, and returned suggestion identifier. It covered accepted, rejected, reviewed, and `NO_CONFIDENT_MATCH` workflows. No OpenAI call or review workflow was performed.
+
+## Stage 12 review and human decision verification
+
+The repository does not define an `npm test` script; the existing equivalent unit command was used.
+
+```bash
+npm test
+npm run typecheck
+npm run build
+npm run test:unit
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run verify:db
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run verify:repositories
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run test:integration
+git diff --check
+```
+
+Results:
+
+```text
+npm test: unavailable because no test script is defined.
+TypeScript typecheck passed.
+TypeScript build passed.
+28 unit tests passed, 0 failed.
+Database connectivity check passed.
+Repository integration verification passed.
+4 PostgreSQL integration tests passed, 0 failed.
+git diff --check passed with no whitespace errors.
+```
+
+The Stage 12 integration test verified suggestion context retrieval, existing review retrieval, invalid UUID handling, unknown suggestion handling, approval creation, rejection validation and creation, and preservation of the original `suggestions.guard_status`. No authentication or review workflow beyond recording decisions was added.

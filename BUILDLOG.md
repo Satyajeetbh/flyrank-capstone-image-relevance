@@ -88,3 +88,12 @@
 - Preserved first-accepted recommendation selection and `NO_CONFIDENT_MATCH` behavior.
 - Added PostgreSQL-backed coverage for accepted, rejected, reviewed, and no-confident-match persistence.
 - Did not add migrations, review workflows, idempotency keys, or suggestion uniqueness constraints.
+
+## 2026-09-03 — Stage 12 review and human decision workflow
+
+- Added typed suggestion-context retrieval and review repositories over the existing `suggestions` and `reviews` tables.
+- Added application review operations for inspecting a suggestion and recording human `approved` or `rejected` decisions.
+- Added Zod-validated `GET /suggestions/:id`, `POST /suggestions/:id/approve`, and `POST /suggestions/:id/reject` routes.
+- Preserved `suggestions.guard_status`; human review decisions are recorded separately in `reviews`.
+- Added PostgreSQL-backed HTTP integration coverage for context retrieval, validation errors, approvals, rejections, existing reviews, and unchanged guard status.
+- Did not add authentication, review lifecycle rules, uniqueness constraints, migrations, or new tables.
