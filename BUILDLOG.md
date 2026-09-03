@@ -62,3 +62,11 @@
 - Added PostgreSQL-backed integration verification for embedding save, retrieval, missing records, invalid vectors, and cleanup.
 - Reused existing unique constraints and deliberately did not introduce an upsert policy.
 - Did not add migrations, dependencies, semantic search, similarity calculation, ranking, matching, queues, workers, or provider changes.
+
+## 2026-09-03 — Stage 9 semantic retrieval and ranking
+
+- Added exact pgvector cosine-distance retrieval for stored post embeddings and completed images with stored metadata.
+- Added a small application service that loads a post and its stored embedding before returning ranked image candidates.
+- Added the `GET /posts/:id/images` Express router with Zod UUID validation and safe HTTP error responses.
+- Added PostgreSQL-backed integration coverage for ranking, cosine similarity values, top-K behavior, metadata projection, and missing post embeddings.
+- Did not add guard integration, `NO_CONFIDENT_MATCH` decisions, OpenAI calls, ANN indexing, migrations, queues, workers, evaluation, or ranking beyond cosine-similarity order.

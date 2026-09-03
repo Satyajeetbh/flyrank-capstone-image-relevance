@@ -183,3 +183,25 @@ Result:
 ```
 
 The verification created unique image and post records, saved and retrieved deterministic 1536-dimensional vectors, checked model and representative values with a tolerance, verified missing records return `null`, rejected invalid vectors before persistence, and cleaned up records in a `finally` block. No OpenAI call, vector search, or ranking was performed.
+
+## Stage 9 semantic retrieval verification
+
+The following commands were executed successfully:
+
+```bash
+npm run typecheck
+npm run build
+npm run test:unit
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run test:integration
+```
+
+Results:
+
+```text
+TypeScript typecheck passed.
+TypeScript build passed.
+28 unit tests passed, 0 failed.
+2 PostgreSQL integration tests passed, 0 failed.
+```
+
+The semantic retrieval integration test used deterministic local vectors to verify exact cosine-distance ordering, converted similarity values, top-K limits, candidate metadata, and the missing post-embedding path. It also verified that a completed candidate with `needs_review` metadata status is returned. It did not call OpenAI or invoke the mismatch guard.

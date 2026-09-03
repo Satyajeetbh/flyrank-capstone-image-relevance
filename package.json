@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit --pretty",
     "verify:db": "npm run build && node scripts/verify-database.mjs",
     "verify:repositories": "npm run build && node scripts/verify-repositories.mjs",
-    "test:integration": "npm run build && node --test tests/integration/embeddings.test.mjs",
+    "test:integration": "npm run build && node --test tests/integration/embeddings.test.mjs tests/integration/semantic-image-retrieval.test.mjs",
     "verify:embeddings": "npm run test:integration",
     "test:unit": "npm run build && node --test tests/unit/mismatch-guard.test.mjs tests/unit/openai-vision.test.mjs tests/unit/openai-embeddings.test.mjs"
   },
@@ -24,11 +24,13 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "express": "^5.2.1",
     "openai": "^7.9.0",
     "pg": "^8.23.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^26.4.1",
     "@types/pg": "^8.23.1",
     "typescript": "^7.0.2"

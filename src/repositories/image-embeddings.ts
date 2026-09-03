@@ -19,6 +19,22 @@ type ImageEmbeddingRow = {
   created_at: Date;
 };
 
+type SimilarImageRow = {
+  image_id: string;
+  similarity: number | string;
+  subject: string;
+  category: string;
+  vision_confidence: number | string;
+};
+
+export interface SemanticImageCandidate {
+  imageId: string;
+  similarity: number;
+  subject: string;
+  category: string;
+  visionConfidence: number;
+};
+
 function mapImageEmbeddingRow(row: ImageEmbeddingRow): ImageEmbeddingRecord {
   return {
     id: row.id,
@@ -26,6 +42,25 @@ function mapImageEmbeddingRow(row: ImageEmbeddingRow): ImageEmbeddingRecord {
     embeddingModel: row.embedding_model,
     embedding: parseEmbeddingVector(row.embedding),
     createdAt: row.created_at,
+  };
+}
+
+function parseFiniteDatabaseNumber(value: number | string, field: string): number {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numberValue)) {
+    throw new Error(`Database returned an invalid ${field}.`);
+  }
+
+  return numberValue;
+}
+
+function mapSimilarImageRow(row: SimilarImageRow): SemanticImageCandidate {
+  return {
+    imageId: row.image_id,
+    similarity: parseFiniteDatabaseNumber(row.similarity, "similarity score"),
+    subject: row.subject,
+    category: row.category,
+    visionConfidence: parseFiniteDatabaseNumber(row.vision_confidence, "vision confidence"),
   };
 }
 
@@ -73,6 +108,37 @@ export class ImageEmbeddingRepository {
 
     const row = result.rows[0];
     return row ? mapImageEmbeddingRow(row) : null;
+  }
+
+  public async findSimilar(
+    queryEmbedding: number[],
+    embeddingModel: string,
+    limit: number,
+  ): Promise<SemanticImageCandidate[]> {
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new Error("Similarity search limit must be a positive integer.");
+    }
+
+    const result = await this.database.query<SimilarImageRow>(
+      `
+        SELECT
+          image_embeddings.image_id,
+          1 - (image_embeddings.embedding <=> $1::vector) AS similarity,
+          image_metadata.subject,
+          image_metadata.category,
+          image_metadata.vision_confidence
+        FROM image_embeddings
+        INNER JOIN images ON images.id = image_embeddings.image_id
+        INNER JOIN image_metadata ON image_metadata.image_id = images.id
+        WHERE image_embeddings.embedding_model = $2
+          AND images.processing_status = 'completed'
+        ORDER BY image_embeddings.embedding <=> $1::vector ASC
+        LIMIT $3
+      `,
+      [serializeEmbeddingVector(queryEmbedding), embeddingModel, limit],
+    );
+
+    return result.rows.map(mapSimilarImageRow);
   }
 }
 
