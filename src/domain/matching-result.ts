@@ -4,6 +4,7 @@ export type MatchingDecision = GuardDecision | "NO_CONFIDENT_MATCH";
 
 export interface MatchingCandidateResult {
   imageId: string;
+  suggestionId: string;
   similarity: number;
   guardDecision: GuardDecision;
   reasonCode: GuardReasonCode | null;

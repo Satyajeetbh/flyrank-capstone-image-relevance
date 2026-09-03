@@ -1,5 +1,6 @@
 import { OPENAI_EMBEDDING_MODEL } from "../providers/openai-embeddings.js";
 import { evaluateMismatchGuard } from "../domain/mismatch-guard.js";
+import type { GuardDecision } from "../domain/mismatch-guard.js";
 import type { MatchingCandidateResult, MatchingResult } from "../domain/matching-result.js";
 import {
   imageEmbeddingRepository,
@@ -7,6 +8,11 @@ import {
   type SemanticImageCandidate,
 } from "../repositories/image-embeddings.js";
 import { postEmbeddingRepository, type PostEmbeddingRepository } from "../repositories/post-embeddings.js";
+import {
+  suggestionRepository,
+  type SuggestionGuardStatus,
+  type SuggestionRepository,
+} from "../repositories/suggestions.js";
 import { postRepository, type PostRepository } from "../repositories/posts.js";
 
 export const DEFAULT_SEMANTIC_RETRIEVAL_LIMIT = 5;
@@ -28,11 +34,23 @@ export interface SemanticImageRetrievalResult {
   candidates: SemanticImageCandidate[];
 }
 
+function toSuggestionGuardStatus(decision: GuardDecision): SuggestionGuardStatus {
+  switch (decision) {
+    case "ACCEPT":
+      return "accept";
+    case "REJECT":
+      return "reject";
+    case "REVIEW":
+      return "review";
+  }
+}
+
 export class SemanticImageRetrievalService {
   public constructor(
     private readonly posts: PostRepository = postRepository,
     private readonly postEmbeddings: PostEmbeddingRepository = postEmbeddingRepository,
     private readonly imageEmbeddings: ImageEmbeddingRepository = imageEmbeddingRepository,
+    private readonly suggestions: SuggestionRepository = suggestionRepository,
   ) {}
 
   public async retrieve(
@@ -69,7 +87,9 @@ export class SemanticImageRetrievalService {
     }
 
     const retrieved = await this.retrieve(post.id, limit);
-    const evaluatedCandidates: MatchingCandidateResult[] = retrieved.candidates.map((candidate) => {
+    const evaluatedCandidates: MatchingCandidateResult[] = [];
+
+    for (const candidate of retrieved.candidates) {
       const guardResult = evaluateMismatchGuard({
         expectedSubject: post.expectedSubject,
         expectedCategory: post.expectedCategory,
@@ -78,15 +98,23 @@ export class SemanticImageRetrievalService {
         visionConfidence: candidate.visionConfidence,
         semanticSimilarity: candidate.similarity,
       });
-
-      return {
+      const suggestion = await this.suggestions.create({
+        postId: post.id,
         imageId: candidate.imageId,
+        similarityScore: candidate.similarity,
+        guardStatus: toSuggestionGuardStatus(guardResult.decision),
+        reason: guardResult.reason,
+      });
+
+      evaluatedCandidates.push({
+        imageId: candidate.imageId,
+        suggestionId: suggestion.id,
         similarity: candidate.similarity,
         guardDecision: guardResult.decision,
         reasonCode: guardResult.reasonCode,
         reason: guardResult.reason,
-      };
-    });
+      });
+    }
 
     const recommendation = evaluatedCandidates.find(
       (candidate) => candidate.guardDecision === "ACCEPT",

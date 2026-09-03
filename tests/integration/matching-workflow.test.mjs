@@ -79,6 +79,28 @@ test("selects the highest-ranked candidate accepted by the mismatch guard", asyn
     );
     assert.ok(Math.abs(result.recommendation.similarity - 0.99) < tolerance);
 
+    const persistedSuggestions = await pool.query(
+      `
+        SELECT id, image_id, similarity_score, guard_status, reason
+        FROM suggestions
+        WHERE post_id = $1
+      `,
+      [post.id],
+    );
+    assert.equal(persistedSuggestions.rows.length, 4);
+
+    const suggestionsByImage = new Map(
+      persistedSuggestions.rows.map((suggestion) => [suggestion.image_id, suggestion]),
+    );
+    assert.equal(result.recommendation.suggestionId, suggestionsByImage.get(accepted.id).id);
+    assert.equal(suggestionsByImage.get(accepted.id).guard_status, "accept");
+    assert.equal(suggestionsByImage.get(accepted.id).reason, result.recommendation.reason);
+    assert.equal(suggestionsByImage.get(rejectedSubject.id).guard_status, "reject");
+    assert.equal(suggestionsByImage.get(rejectedSubject.id).reason, "The candidate image subject does not match the post subject.");
+    assert.equal(suggestionsByImage.get(review.id).guard_status, "review");
+    assert.equal(suggestionsByImage.get(review.id).reason, "Vision confidence is below 0.7.");
+    assert.equal(suggestionsByImage.get(lowSimilarity.id).guard_status, "reject");
+
     const noMatchPost = await postRepository.create({
       title: `No confident match ${runId}`,
       content: "No confident match integration test.",
@@ -92,6 +114,16 @@ test("selects the highest-ranked candidate accepted by the mismatch guard", asyn
     assert.equal(noMatchResult.decision, "NO_CONFIDENT_MATCH");
     assert.equal(noMatchResult.recommendation, null);
     assert.equal(noMatchResult.alternatives.length, 4);
+
+    const noMatchSuggestions = await pool.query(
+      "SELECT id FROM suggestions WHERE post_id = $1",
+      [noMatchPost.id],
+    );
+    assert.equal(noMatchSuggestions.rows.length, 4);
+    assert.deepEqual(
+      noMatchResult.alternatives.map((candidate) => candidate.suggestionId).sort(),
+      noMatchSuggestions.rows.map((suggestion) => suggestion.id).sort(),
+    );
   } finally {
     try {
       for (const postId of postIds) {

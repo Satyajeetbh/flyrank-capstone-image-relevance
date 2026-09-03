@@ -79,3 +79,12 @@
 - Extended the existing `/posts/:id/images` response through the same route without persisting suggestions.
 - Added PostgreSQL-backed integration coverage for accepted candidates, subject mismatch, low vision confidence, no confident match, and selecting a lower-ranked accepted candidate.
 - Did not add OpenAI calls, suggestion persistence, review endpoints, queues, workers, evaluation, or threshold changes.
+
+## 2026-09-03 — Stage 11 persist matching suggestions
+
+- Added a typed `SuggestionRepository` for creating persisted evaluated candidates in the existing `suggestions` table.
+- Explicitly mapped domain guard decisions (`ACCEPT`, `REJECT`, `REVIEW`) to database statuses (`accept`, `reject`, `review`).
+- Updated the Stage 10 matching workflow to persist every evaluated candidate and return its `suggestionId`.
+- Preserved first-accepted recommendation selection and `NO_CONFIDENT_MATCH` behavior.
+- Added PostgreSQL-backed coverage for accepted, rejected, reviewed, and no-confident-match persistence.
+- Did not add migrations, review workflows, idempotency keys, or suggestion uniqueness constraints.
