@@ -1,10 +1,10 @@
 # FlyRank AI Image Understanding & Content Matching Engine
 
-This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, Stage 4 core repositories, and Stage 5 domain/application contracts for the FlyRank capstone project.
+This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, Stage 4 core repositories, Stage 5 domain/application contracts, Stage 6 vision provider, Stage 7 embedding provider, and Stage 8 embedding persistence repositories for the FlyRank capstone project.
 
 ## Current scope
 
-Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. Stage 6 adds the OpenAI vision provider and Zod validation boundary for image understanding. It does not implement API endpoints, Redis/BullMQ, future-stage repositories, services, vector search, matching orchestration, embeddings, or application business logic.
+Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. Stage 6 adds the OpenAI vision provider and Zod validation boundary for image understanding. Stage 7 adds the OpenAI text-embedding provider and deterministic text representations. Stage 8 adds embedding persistence repositories for images and posts. It does not implement API endpoints, Redis/BullMQ, vector search, matching orchestration, ranking, or application business logic.
 
 The embedding decision for the persistence schema is authoritative: OpenAI `text-embedding-3-small`, stored as `vector(1536)` for both image and post embeddings. This records the storage contract only; provider integration is a future stage.
 
@@ -99,6 +99,40 @@ The provider accepts an image URL and requests structured image-understanding ou
 Provider/API failures and invalid model output are classified separately. Valid low-confidence metadata remains valid output; the deterministic mismatch guard remains responsible for deciding whether it should be accepted, rejected, or reviewed. Embeddings are intentionally not part of Stage 6.
 
 The selected model is `gpt-4.1-mini`, defined in `src/providers/openai-vision.ts` so it can be changed in a later stage without introducing model-selection infrastructure.
+
+## Stage 7 OpenAI embedding provider
+
+The embedding provider uses the fixed `text-embedding-3-small` model and validates exactly 1536 finite numeric values. It accepts image metadata or a post title/content input and returns `number[]`; it does not persist or search vectors.
+
+Canonical image representation:
+
+```text
+Subject: <subject>
+Category: <category>
+Attributes: <comma-separated attributes>
+Caption: <caption>
+```
+
+Canonical post representation:
+
+```text
+Title: <title>
+Content: <content>
+```
+
+Provider/API failures are classified as `provider_api_failure`; malformed or incorrectly sized embedding responses are classified separately as invalid provider output. No real API call is required by the unit tests.
+
+## Stage 8 embedding persistence
+
+`ImageEmbeddingRepository` and `PostEmbeddingRepository` save and retrieve `number[]` vectors through the existing `image_embeddings` and `post_embeddings` tables. The repositories validate exactly 1536 finite numeric values, serialize writes as parameterized pgvector literals, and parse `embedding::text` reads back into `number[]`.
+
+The existing unique constraints on `(image_id, embedding_model)` and `(post_id, embedding_model)` reject duplicate writes. No upsert policy, semantic retrieval, similarity calculation, or ranking is implemented.
+
+Run the PostgreSQL-backed embedding verification with the required database variables set:
+
+```bash
+npm run verify:embeddings
+```
 
 ## TypeScript verification
 

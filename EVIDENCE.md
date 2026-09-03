@@ -145,3 +145,41 @@ git diff --check passed with no whitespace errors.
 ```
 
 The unit tests cover valid structured output, empty required fields, invalid attributes, out-of-range confidence, and valid low-confidence output. Tests use no real OpenAI API call. Live provider/API behavior remains unverified.
+
+## Stage 7 OpenAI embedding provider verification
+
+The following commands were executed successfully:
+
+```bash
+npm run typecheck
+npm run build
+npm run test:unit
+git diff --check
+```
+
+The Stage 7 unit tests exercise deterministic image and post representations, valid embedding parsing, wrong dimensions, non-numeric values, non-finite values, provider failure classification, and the fixed model constant. No real OpenAI API call was made, and no embedding persistence or retrieval was exercised.
+
+Results:
+
+```text
+TypeScript typecheck passed.
+TypeScript build passed.
+28 unit tests passed, 0 failed.
+git diff --check passed with no whitespace errors.
+```
+
+## Stage 8 embedding persistence verification
+
+The following command was executed successfully against the local PostgreSQL pgvector container:
+
+```bash
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run verify:embeddings
+```
+
+Result:
+
+```text
+1 integration test passed, 0 failed.
+```
+
+The verification created unique image and post records, saved and retrieved deterministic 1536-dimensional vectors, checked model and representative values with a tolerance, verified missing records return `null`, rejected invalid vectors before persistence, and cleaned up records in a `finally` block. No OpenAI call, vector search, or ranking was performed.

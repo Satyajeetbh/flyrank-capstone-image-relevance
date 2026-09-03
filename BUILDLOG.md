@@ -46,3 +46,19 @@
 - Classified provider/API failures separately from invalid model output; valid low-confidence output remains valid metadata.
 - Added offline unit tests for valid, invalid, and low-confidence structured responses without making a real API call.
 - Did not add embeddings, persistence changes, repository changes, vector search, queues, routes, matching orchestration, or AI usage tracking.
+
+## 2026-09-03 — Stage 7 OpenAI embedding provider
+
+- Added the focused OpenAI embedding provider using `text-embedding-3-small` and the fixed 1536-dimension embedding contract.
+- Added deterministic canonical text representations for image metadata and post title/content.
+- Added validation for embedding shape, exact dimension, finite numeric values, and provider/API error classification.
+- Added offline unit tests for canonical representations, valid output, invalid dimensions/values, low-level provider failures, and the fixed model constant.
+- Did not add embedding persistence, pgvector queries, repositories, matching, ranking, guard changes, queues, workers, cost tracking, or evaluation.
+
+## 2026-09-03 — Stage 8 embedding persistence/data access
+
+- Added focused image and post embedding repositories over the existing pgvector schema.
+- Added 1536-dimension finite-number validation and pgvector serialization/parsing inside the repository layer.
+- Added PostgreSQL-backed integration verification for embedding save, retrieval, missing records, invalid vectors, and cleanup.
+- Reused existing unique constraints and deliberately did not introduce an upsert policy.
+- Did not add migrations, dependencies, semantic search, similarity calculation, ranking, matching, queues, workers, or provider changes.
