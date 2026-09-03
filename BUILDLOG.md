@@ -1,11 +1,11 @@
 # Build Log
 
-## 2026-09-03 — Initial repository foundation
+## 2026-09-03 — Stage 2 PostgreSQL persistence
 
-- Confirmed the repository already contained a Node.js package and TypeScript compiler configuration.
-- Standardized the package as an ES module TypeScript project.
-- Added `build` and `typecheck` npm scripts.
-- Added the requested source, test, data, script, migration, and documentation directories.
-- Added placeholder markers for otherwise-empty directories so Git can track the structure.
-- Kept Docker Compose intentionally empty; no database, cache, queue, or application service is part of this foundation.
-- Did not add application behavior or integrations.
+- AI-assisted implementation of the PostgreSQL persistence foundation.
+- Added a PostgreSQL 16 pgvector Compose service with configurable local database credentials, a persistent named volume, port mapping, and healthcheck.
+- Recorded the authoritative embedding decision: OpenAI `text-embedding-3-small` with 1536 dimensions.
+- Added plain SQL migrations for extensions, core tables, constraints, and indexes.
+- Added UUID primary keys, foreign keys, timestamps, status checks, confidence/similarity checks, JSONB image attributes, and `vector(1536)` embedding columns.
+- Kept migration execution dependency-free; no ORM or migration runner was added because ordered `psql` commands are sufficient at this stage.
+- Did not add OpenAI integration, repositories, services, controllers, routes, Redis, BullMQ, matching logic, mismatch guard logic, or business logic.

@@ -6,5 +6,13 @@ runtime: node
 verification:
   build: npm run build
   typecheck: npm run typecheck
+  database: docker compose up -d postgres
 
-scope: foundation-only
+persistence:
+  database: postgresql
+  extensions:
+    - vector
+  embedding_model: text-embedding-3-small
+  embedding_dimension: 1536
+
+scope: stage-2-persistence
