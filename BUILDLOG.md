@@ -28,3 +28,12 @@
 - Added a standalone repository integration verification with unique test data and cleanup.
 - Did not modify migrations or add repositories for the other seven schema entities.
 - Did not add future-stage AI, matching, guard, queue, worker, HTTP, or application business logic.
+
+## 2026-09-03 — Stage 5 domain/application foundation
+
+- Added the typed provider-neutral `ImageMetadata` domain contract for validated image understanding output.
+- Added a deterministic mismatch guard with `ACCEPT`, `REJECT`, and `REVIEW` decisions plus the brief's machine-readable reason codes.
+- Centralized provisional semantic-similarity (`0.75`) and vision-confidence (`0.70`) thresholds in `src/domain/guard-policy.ts`; these require tuning against the labeled evaluation set.
+- Added the small `MatchingResult` and candidate-context contracts needed by a later orchestration stage without implementing orchestration.
+- Added focused Node built-in unit tests for guard outcomes, missing metadata, and threshold boundaries.
+- Did not add runtime provider validation, OpenAI, database access, repositories, embeddings, vector search, queues, HTTP, or business workflows.

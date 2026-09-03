@@ -11,7 +11,8 @@
     "build": "tsc --pretty",
     "typecheck": "tsc --noEmit --pretty",
     "verify:db": "npm run build && node scripts/verify-database.mjs",
-    "verify:repositories": "npm run build && node scripts/verify-repositories.mjs"
+    "verify:repositories": "npm run build && node scripts/verify-repositories.mjs",
+    "test:unit": "npm run build && node --test tests/unit/mismatch-guard.test.mjs"
   },
   "keywords": [
     "typescript",

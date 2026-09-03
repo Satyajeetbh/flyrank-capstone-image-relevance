@@ -101,3 +101,25 @@ TypeScript verification also passed:
 npm run typecheck
 npm run build
 ```
+
+## Stage 5 domain/application verification
+
+The following commands were executed successfully:
+
+```bash
+npm run typecheck
+npm run build
+npm run test:unit
+git diff --check
+```
+
+Results:
+
+```text
+TypeScript typecheck passed.
+TypeScript build passed.
+10 unit tests passed, 0 failed.
+git diff --check passed with no whitespace errors.
+```
+
+The unit tests execute the compiled deterministic mismatch guard and cover acceptance, rejection, review, missing metadata, and both threshold boundaries. No PostgreSQL, provider, or application integration was added or required for Stage 5.

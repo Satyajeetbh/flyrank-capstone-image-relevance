@@ -1,10 +1,10 @@
 # FlyRank AI Image Understanding & Content Matching Engine
 
-This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, and Stage 4 core repositories for the FlyRank capstone project.
+This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, Stage 4 core repositories, and Stage 5 domain/application contracts for the FlyRank capstone project.
 
 ## Current scope
 
-Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. It does not implement API endpoints, OpenAI integration, Redis/BullMQ, future-stage repositories, services, matching logic, mismatch guard logic, or application business logic.
+Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. It does not implement API endpoints, OpenAI integration, Redis/BullMQ, future-stage repositories, services, vector search, matching orchestration, or application business logic.
 
 The embedding decision for the persistence schema is authoritative: OpenAI `text-embedding-3-small`, stored as `vector(1536)` for both image and post embeddings. This records the storage contract only; provider integration is a future stage.
 
@@ -67,6 +67,12 @@ npm run verify:db
 
 The command builds the TypeScript source, executes `SELECT 1` through the shared pool, and closes the pool. It exits non-zero if configuration is missing or PostgreSQL is unreachable.
 
+## Stage 5 guard policy
+
+The deterministic mismatch guard uses provisional thresholds of `0.75` for semantic similarity and `0.70` for vision confidence. These values are centralized in `src/domain/guard-policy.ts` and must be tuned against the labeled evaluation set; they are not presented as empirically optimal.
+
+The guard returns `REVIEW` with `MISSING_METADATA` when required subject, category, or vision-confidence data is absent. A candidate without a usable similarity score returns `REJECT` with `NO_USABLE_CANDIDATE`. Accepted results have no failure reason code (`null`).
+
 ## Repository verification
 
 After PostgreSQL is running and migrations have been applied, set the required database variables and run:
@@ -76,6 +82,14 @@ npm run verify:repositories
 ```
 
 The verification creates unique image and post rows, retrieves and lists them, updates the image processing status, and removes the inserted rows afterward.
+
+## Stage 5 unit tests
+
+```bash
+npm run test:unit
+```
+
+The unit tests execute the compiled deterministic guard with Node's built-in test runner and cover decision, reason-code, and threshold-boundary behavior.
 
 ## TypeScript verification
 
