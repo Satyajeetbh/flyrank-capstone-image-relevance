@@ -205,3 +205,27 @@ TypeScript build passed.
 ```
 
 The semantic retrieval integration test used deterministic local vectors to verify exact cosine-distance ordering, converted similarity values, top-K limits, candidate metadata, and the missing post-embedding path. It also verified that a completed candidate with `needs_review` metadata status is returned. It did not call OpenAI or invoke the mismatch guard.
+
+## Stage 10 deterministic guard integration verification
+
+The following commands were executed successfully:
+
+```bash
+npm run typecheck
+npm run build
+npm run test:unit
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run test:integration
+git diff --check
+```
+
+Results:
+
+```text
+TypeScript typecheck passed.
+TypeScript build passed.
+28 unit tests passed, 0 failed.
+3 PostgreSQL integration tests passed, 0 failed.
+git diff --check passed with no whitespace errors.
+```
+
+The Stage 10 integration test verified accepted-candidate recommendation, subject mismatch rejection, low-confidence review, `NO_CONFIDENT_MATCH`, ranked selection of a lower candidate accepted by the guard, and preservation of alternative guard decisions and reasons. No OpenAI call or suggestion persistence was performed.

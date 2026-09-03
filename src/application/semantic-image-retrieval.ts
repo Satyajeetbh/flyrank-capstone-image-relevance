@@ -1,4 +1,6 @@
 import { OPENAI_EMBEDDING_MODEL } from "../providers/openai-embeddings.js";
+import { evaluateMismatchGuard } from "../domain/mismatch-guard.js";
+import type { MatchingCandidateResult, MatchingResult } from "../domain/matching-result.js";
 import {
   imageEmbeddingRepository,
   type ImageEmbeddingRepository,
@@ -54,6 +56,49 @@ export class SemanticImageRetrievalService {
         OPENAI_EMBEDDING_MODEL,
         limit,
       ),
+    };
+  }
+
+  public async match(
+    postId: string,
+    limit = DEFAULT_SEMANTIC_RETRIEVAL_LIMIT,
+  ): Promise<MatchingResult> {
+    const post = await this.posts.findById(postId);
+    if (!post) {
+      throw new SemanticRetrievalError("Post was not found.", "post_not_found");
+    }
+
+    const retrieved = await this.retrieve(post.id, limit);
+    const evaluatedCandidates: MatchingCandidateResult[] = retrieved.candidates.map((candidate) => {
+      const guardResult = evaluateMismatchGuard({
+        expectedSubject: post.expectedSubject,
+        expectedCategory: post.expectedCategory,
+        candidateSubject: candidate.subject,
+        candidateCategory: candidate.category,
+        visionConfidence: candidate.visionConfidence,
+        semanticSimilarity: candidate.similarity,
+      });
+
+      return {
+        imageId: candidate.imageId,
+        similarity: candidate.similarity,
+        guardDecision: guardResult.decision,
+        reasonCode: guardResult.reasonCode,
+        reason: guardResult.reason,
+      };
+    });
+
+    const recommendation = evaluatedCandidates.find(
+      (candidate) => candidate.guardDecision === "ACCEPT",
+    ) ?? null;
+
+    return {
+      postId: post.id,
+      decision: recommendation ? "ACCEPT" : "NO_CONFIDENT_MATCH",
+      recommendation,
+      alternatives: recommendation
+        ? evaluatedCandidates.filter((candidate) => candidate !== recommendation)
+        : evaluatedCandidates,
     };
   }
 }

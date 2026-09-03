@@ -23,7 +23,7 @@ export function createPostImageRetrievalRouter(
     }
 
     try {
-      const result = await retrievalService.retrieve(parameters.data.id);
+      const result = await retrievalService.match(parameters.data.id);
       response.status(200).json(result);
     } catch (error: unknown) {
       if (error instanceof SemanticRetrievalError) {

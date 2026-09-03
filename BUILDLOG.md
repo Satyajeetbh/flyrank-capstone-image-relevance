@@ -70,3 +70,12 @@
 - Added the `GET /posts/:id/images` Express router with Zod UUID validation and safe HTTP error responses.
 - Added PostgreSQL-backed integration coverage for ranking, cosine similarity values, top-K behavior, metadata projection, and missing post embeddings.
 - Did not add guard integration, `NO_CONFIDENT_MATCH` decisions, OpenAI calls, ANN indexing, migrations, queues, workers, evaluation, or ranking beyond cosine-similarity order.
+
+## 2026-09-03 — Stage 10 deterministic mismatch guard integration
+
+- Connected ranked semantic candidates to the existing deterministic mismatch guard in the application service.
+- Selects the first ranked candidate whose guard decision is `ACCEPT`; rejected and reviewed candidates remain in `alternatives`.
+- Returns `NO_CONFIDENT_MATCH` with a null recommendation when no candidate is accepted.
+- Extended the existing `/posts/:id/images` response through the same route without persisting suggestions.
+- Added PostgreSQL-backed integration coverage for accepted candidates, subject mismatch, low vision confidence, no confident match, and selecting a lower-ranked accepted candidate.
+- Did not add OpenAI calls, suggestion persistence, review endpoints, queues, workers, evaluation, or threshold changes.

@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit --pretty",
     "verify:db": "npm run build && node scripts/verify-database.mjs",
     "verify:repositories": "npm run build && node scripts/verify-repositories.mjs",
-    "test:integration": "npm run build && node --test tests/integration/embeddings.test.mjs tests/integration/semantic-image-retrieval.test.mjs",
+    "test:integration": "npm run build && node --test --test-concurrency=1 tests/integration/embeddings.test.mjs tests/integration/semantic-image-retrieval.test.mjs tests/integration/matching-workflow.test.mjs",
     "verify:embeddings": "npm run test:integration",
     "test:unit": "npm run build && node --test tests/unit/mismatch-guard.test.mjs tests/unit/openai-vision.test.mjs tests/unit/openai-embeddings.test.mjs"
   },
