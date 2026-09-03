@@ -1,0 +1,3 @@
+# The foundation intentionally defines no runtime services yet.
+# Add services only when required by the project master brief.
+services: {}

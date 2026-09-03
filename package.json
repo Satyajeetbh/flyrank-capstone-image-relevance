@@ -1,19 +1,20 @@
 {
   "name": "flyrank-capstone-image-relevance",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Foundation for the FlyRank AI image understanding and content matching engine",
+  "main": "dist/index.js",
   "directories": {
     "doc": "docs",
     "test": "tests"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc --pretty",
+    "typecheck": "tsc --noEmit --pretty"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["typescript", "image-relevance"],
+  "author": "FlyRank",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@types/node": "^26.4.1",
     "typescript": "^7.0.2"
