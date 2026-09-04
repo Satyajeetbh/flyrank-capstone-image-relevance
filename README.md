@@ -1,10 +1,10 @@
 # FlyRank AI Image Understanding & Content Matching Engine
 
-This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, Stage 4 core repositories, Stage 5 domain/application contracts, Stage 6 vision provider, Stage 7 embedding provider, and Stage 8 embedding persistence repositories for the FlyRank capstone project.
+This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, Stage 4 core repositories, Stage 5 domain/application contracts, Stage 6 vision provider, Stage 7 embedding provider, Stage 8 embedding persistence repositories, and Stage 13 retrieval evaluation for the FlyRank capstone project.
 
 ## Current scope
 
-Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. Stage 6 adds the OpenAI vision provider and Zod validation boundary for image understanding. Stage 7 adds the OpenAI text-embedding provider and deterministic text representations. Stage 8 adds embedding persistence repositories for images and posts. It does not implement API endpoints, Redis/BullMQ, vector search, matching orchestration, ranking, or application business logic.
+Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. Stage 6 adds the OpenAI vision provider and Zod validation boundary for image understanding. Stage 7 adds the OpenAI text-embedding provider and deterministic text representations. Stage 8 adds embedding persistence repositories for images and posts. Stage 13 adds reproducible baseline-versus-guarded retrieval evaluation. It does not implement API endpoints, Redis/BullMQ, vector search beyond the existing exact retrieval, matching changes, or application business logic.
 
 The embedding decision for the persistence schema is authoritative: OpenAI `text-embedding-3-small`, stored as `vector(1536)` for both image and post embeddings. This records the storage contract only; provider integration is a future stage.
 
@@ -70,7 +70,7 @@ The command builds the TypeScript source, executes `SELECT 1` through the shared
 
 ## Stage 5 guard policy
 
-The deterministic mismatch guard uses provisional thresholds of `0.75` for semantic similarity and `0.70` for vision confidence. These values are centralized in `src/domain/guard-policy.ts` and must be tuned against the labeled evaluation set; they are not presented as empirically optimal.
+The deterministic mismatch guard originally used provisional thresholds of `0.75` for semantic similarity and `0.70` for vision confidence. After calibration against the current real-embedding evaluation corpus, the production semantic similarity threshold is now `0.66`; the vision-confidence threshold remains `0.70`. Both values are centralized in `src/domain/guard-policy.ts`.
 
 The guard returns `REVIEW` with `MISSING_METADATA` when required subject, category, or vision-confidence data is absent. A candidate without a usable similarity score returns `REJECT` with `NO_USABLE_CANDIDATE`. Accepted results have no failure reason code (`null`).
 
@@ -133,6 +133,23 @@ Run the PostgreSQL-backed embedding verification with the required database vari
 ```bash
 npm run verify:embeddings
 ```
+
+## Stage 13 retrieval evaluation
+
+The evaluation dataset is stored in `data/evaluation/labeled-posts.json` and contains 10 labeled post/image pairs. The entity fixture seeds only posts and image metadata; embeddings must be generated with the existing OpenAI provider:
+
+```bash
+docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U flyrank -d flyrank < data/evaluation/seed-evaluation.sql
+OPENAI_API_KEY=<key> POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run generate:evaluation
+```
+
+Corpus generation calls OpenAI and incurs embedding usage. After generated vectors are persisted, evaluation itself is offline:
+
+```bash
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run evaluate:retrieval
+```
+
+The evaluator reports baseline top-1 accuracy from the highest-similarity candidate and guarded top-1 accuracy from the existing matching workflow. It also reports no-confident-match count, accepted incorrect matches, and expected images retrieved but rejected by the guard. The experiment-only calibration mode reports threshold sweeps without changing production configuration. Calibration evidence showed `0.660` and `0.661` at 10/10 guarded correctness with zero incorrect accepted matches, while `0.662` dropped to 9/10. The rounded `0.66` threshold was selected as the highest practical rounded threshold supported by the current 10-post corpus; it is not universally optimal. Evaluation does not call OpenAI or persist evaluation tables.
 
 ## TypeScript verification
 

@@ -97,3 +97,23 @@
 - Preserved `suggestions.guard_status`; human review decisions are recorded separately in `reviews`.
 - Added PostgreSQL-backed HTTP integration coverage for context retrieval, validation errors, approvals, rejections, existing reviews, and unchanged guard status.
 - Did not add authentication, review lifecycle rules, uniqueness constraints, migrations, or new tables.
+
+## 2026-09-03 — Stage 13 retrieval evaluation and quality measurement
+
+- Added a 10-record labeled post/image evaluation set and an entity-only local seed file.
+- Added `scripts/generate-evaluation-corpus.mjs`, which uses the existing `OpenAIEmbeddingProvider` and embedding repositories to generate and persist real `text-embedding-3-small` vectors.
+- Added pure evaluation metric calculation for baseline semantic top-1 and guarded top-1 outcomes.
+- Added `scripts/evaluate-retrieval.mjs`, which uses persisted embeddings and makes no OpenAI calls during evaluation.
+- Added an evaluation test covering labeled-set loading and derived metrics.
+- The generator is available for fresh provider-backed corpus creation; this environment did not have an `OPENAI_API_KEY`, while the evaluator ran against the existing persisted fixture vectors.
+- Added a test-only integration wrapper that temporarily excludes only evaluation images and restores their original processing statuses in `finally`.
+- Did not add a new retrieval algorithm, matching entity, database table, or evaluation framework.
+
+## 2026-09-03 — Production similarity threshold calibration
+
+- Preserved the original provisional semantic similarity threshold of `0.75` in the calibration history.
+- Ran the experiment-only real-embedding sweep across `0.660` through `0.670`.
+- `0.660` and `0.661` achieved 10/10 guarded correctness with zero incorrect accepted matches; `0.662` achieved 9/10.
+- Selected the rounded `0.66` threshold for production as the highest practical rounded threshold supported by the current evidence.
+- The evidence is based on only 10 labeled evaluation posts and is not presented as universally optimal.
+- Changed only `GUARD_THRESHOLDS.minimumSemanticSimilarity`; the calibration mode remains available.

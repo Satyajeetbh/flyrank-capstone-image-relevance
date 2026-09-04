@@ -283,3 +283,76 @@ git diff --check passed with no whitespace errors.
 ```
 
 The Stage 12 integration test verified suggestion context retrieval, existing review retrieval, invalid UUID handling, unknown suggestion handling, approval creation, rejection validation and creation, and preservation of the original `suggestions.guard_status`. No authentication or review workflow beyond recording decisions was added.
+
+## Stage 13 retrieval evaluation
+
+The metric calculation test was executed successfully:
+
+```bash
+npm run test:evaluation
+```
+
+Result:
+
+```text
+1 evaluation test passed, 0 failed.
+```
+
+The evaluation corpus entity seed was executed successfully. The fixed fixture already had persisted 1536-dimensional vectors when this correction was run; the generation command was also attempted but could not call OpenAI because `OPENAI_API_KEY` is not configured in this environment. No synthetic vector construction remains in the seed SQL.
+
+For a fresh corpus, run:
+
+```bash
+docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U flyrank -d flyrank < data/evaluation/seed-evaluation.sql
+OPENAI_API_KEY=<key> POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run generate:evaluation
+```
+
+Corpus generation calls OpenAI and incurs embedding usage. Evaluation runs only against persisted vectors and makes no OpenAI calls:
+
+```bash
+POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run evaluate:retrieval
+```
+
+Observed generation command in this correction:
+
+```text
+generate:evaluation: failed with "Evaluation corpus generation failed. Verify PostgreSQL and OPENAI_API_KEY configuration."
+```
+
+The integration-isolated test command also passed:
+
+```text
+4 PostgreSQL integration tests passed, 0 failed.
+```
+
+The evaluator was first run against the persisted fixture before applying the calibrated production threshold and produced:
+
+```json
+{
+  "totalEvaluatedPosts": 10,
+  "baselineCorrect": 10,
+  "baselineIncorrect": 0,
+  "guardedCorrect": 3,
+  "guardedIncorrect": 7,
+  "noConfidentMatchCount": 7,
+  "acceptedIncorrectMatches": 0,
+  "expectedRetrievedButRejectedCount": 7
+}
+```
+
+After applying the production threshold of `0.66`, the evaluator produced:
+
+```json
+{
+  "totalEvaluatedPosts": 10,
+  "baselineCorrect": 10,
+  "baselineIncorrect": 0,
+  "guardedCorrect": 10,
+  "guardedIncorrect": 0,
+  "noConfidentMatchCount": 0,
+  "acceptedIncorrectMatches": 0,
+  "expectedRetrievedButRejectedCount": 0
+}
+```
+
+The calibration experiment that informed the selection showed 10/10 guarded correctness with zero incorrect accepted matches at `0.660` and `0.661`, while `0.662` dropped to 9/10. The evidence is based on 10 labeled posts and is empirical for this corpus, not universally optimal. The existing experiment-only calibration mode remains available and no OpenAI call is made during evaluation.

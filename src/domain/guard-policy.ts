@@ -1,8 +1,9 @@
 /**
- * Provisional thresholds for the deterministic guard.
- * They must be tuned against the labeled evaluation set in a later stage.
+ * Production thresholds for the deterministic guard.
+ * Semantic similarity was calibrated against the current 10-post labeled set;
+ * it is empirical for this corpus and not universally optimal.
  */
 export const GUARD_THRESHOLDS = {
-  minimumSemanticSimilarity: 0.75,
+  minimumSemanticSimilarity: 0.66,
   minimumVisionConfidence: 0.7,
 } as const;
