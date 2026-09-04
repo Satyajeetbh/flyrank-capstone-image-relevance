@@ -7,6 +7,7 @@ const integrationTests = [
   "tests/integration/semantic-image-retrieval.test.mjs",
   "tests/integration/matching-workflow.test.mjs",
   "tests/integration/suggestion-review.test.mjs",
+  "tests/integration/ai-usage.test.mjs",
 ];
 
 let closeDatabasePool;

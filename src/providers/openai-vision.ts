@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 
 import type { ImageMetadata } from "../domain/image-metadata.js";
+import type { ProviderResult, ProviderUsage } from "../domain/ai-usage.js";
 
 export const OPENAI_VISION_MODEL = "gpt-4.1-mini" as const;
 
@@ -47,6 +48,29 @@ export class OpenAIVisionError extends Error {
   }
 }
 
+const visionUsageSchema = z.object({
+  input_tokens: z.number().int().nonnegative(),
+  output_tokens: z.number().int().nonnegative(),
+});
+
+export function parseVisionUsage(rawUsage: unknown): ProviderUsage | null {
+  if (rawUsage === undefined || rawUsage === null) {
+    return null;
+  }
+
+  const parsed = visionUsageSchema.safeParse(rawUsage);
+  if (!parsed.success) {
+    throw new OpenAIVisionError("OpenAI vision usage failed validation.", "invalid_model_output");
+  }
+
+  return {
+    provider: "openai",
+    model: OPENAI_VISION_MODEL,
+    inputUnits: parsed.data.input_tokens,
+    outputUnits: parsed.data.output_tokens,
+  };
+}
+
 export function parseImageMetadata(rawOutput: unknown): ImageMetadata {
   const parsed = imageMetadataOutputSchema.safeParse(rawOutput);
 
@@ -69,7 +93,7 @@ export class OpenAIVisionProvider {
     this.client = new OpenAI({ apiKey });
   }
 
-  public async understandImage(input: OpenAIVisionInput): Promise<ImageMetadata> {
+  public async understandImage(input: OpenAIVisionInput): Promise<ProviderResult<ImageMetadata>> {
     let response: OpenAI.Responses.Response;
 
     try {
@@ -104,6 +128,9 @@ export class OpenAIVisionProvider {
       throw new OpenAIVisionError("OpenAI vision output was not valid JSON.", "invalid_model_output");
     }
 
-    return parseImageMetadata(rawOutput);
+    return {
+      output: parseImageMetadata(rawOutput),
+      usage: parseVisionUsage(response.usage),
+    };
   }
 }

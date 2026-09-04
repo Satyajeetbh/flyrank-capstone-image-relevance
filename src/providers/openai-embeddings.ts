@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 
 import type { ImageMetadata } from "../domain/image-metadata.js";
+import type { ProviderResult, ProviderUsage } from "../domain/ai-usage.js";
 
 export const OPENAI_EMBEDDING_MODEL = "text-embedding-3-small" as const;
 export const OPENAI_EMBEDDING_DIMENSIONS = 1536 as const;
@@ -42,6 +43,29 @@ const embeddingResponseSchema = z.object({
 
 const embeddingVectorSchema = z.array(z.number().finite()).length(OPENAI_EMBEDDING_DIMENSIONS);
 
+const embeddingUsageSchema = z.object({
+  prompt_tokens: z.number().int().nonnegative(),
+  total_tokens: z.number().int().nonnegative(),
+});
+
+export function parseEmbeddingUsage(rawUsage: unknown): ProviderUsage | null {
+  if (rawUsage === undefined || rawUsage === null) {
+    return null;
+  }
+
+  const parsed = embeddingUsageSchema.safeParse(rawUsage);
+  if (!parsed.success || parsed.data.total_tokens < parsed.data.prompt_tokens) {
+    throw new OpenAIEmbeddingError("OpenAI embedding usage failed validation.", "invalid_embedding_output");
+  }
+
+  return {
+    provider: "openai",
+    model: OPENAI_EMBEDDING_MODEL,
+    inputUnits: parsed.data.prompt_tokens,
+    outputUnits: 0,
+  };
+}
+
 export function parseEmbeddingResponse(rawResponse: unknown): number[] {
   const response = embeddingResponseSchema.safeParse(rawResponse);
   const rawEmbedding = response.success ? response.data.data[0]?.embedding : undefined;
@@ -69,15 +93,15 @@ export class OpenAIEmbeddingProvider {
     this.client = new OpenAI({ apiKey });
   }
 
-  public async embedImageMetadata(metadata: ImageMetadata): Promise<number[]> {
+  public async embedImageMetadata(metadata: ImageMetadata): Promise<ProviderResult<number[]>> {
     return this.embedText(imageMetadataToEmbeddingText(metadata));
   }
 
-  public async embedPost(input: PostEmbeddingInput): Promise<number[]> {
+  public async embedPost(input: PostEmbeddingInput): Promise<ProviderResult<number[]>> {
     return this.embedText(postToEmbeddingText(input));
   }
 
-  private async embedText(text: string): Promise<number[]> {
+  private async embedText(text: string): Promise<ProviderResult<number[]>> {
     let response: OpenAI.Embeddings.CreateEmbeddingResponse;
 
     try {
@@ -89,6 +113,9 @@ export class OpenAIEmbeddingProvider {
       throw new OpenAIEmbeddingError("OpenAI embedding request failed.", "provider_api_failure");
     }
 
-    return parseEmbeddingResponse(response);
+    return {
+      output: parseEmbeddingResponse(response),
+      usage: parseEmbeddingUsage(response.usage),
+    };
   }
 }

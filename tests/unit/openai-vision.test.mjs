@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { OpenAIVisionError, parseImageMetadata } from "../../dist/providers/openai-vision.js";
+import {
+  OpenAIVisionError,
+  parseImageMetadata,
+  parseVisionUsage,
+} from "../../dist/providers/openai-vision.js";
 
 function validOutput(overrides = {}) {
   return {
@@ -53,4 +57,13 @@ test("preserves valid low-confidence output as metadata", () => {
   const metadata = parseImageMetadata(validOutput({ confidence: 0.2 }));
 
   assert.equal(metadata.confidence, 0.2);
+});
+
+test("maps Responses API token usage to provider-neutral usage", () => {
+  assert.deepEqual(parseVisionUsage({ input_tokens: 120, output_tokens: 30 }), {
+    provider: "openai",
+    model: "gpt-4.1-mini",
+    inputUnits: 120,
+    outputUnits: 30,
+  });
 });

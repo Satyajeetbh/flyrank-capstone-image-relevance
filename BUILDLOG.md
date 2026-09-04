@@ -117,3 +117,13 @@
 - Selected the rounded `0.66` threshold for production as the highest practical rounded threshold supported by the current evidence.
 - The evidence is based on only 10 labeled evaluation posts and is not presented as universally optimal.
 - Changed only `GUARD_THRESHOLDS.minimumSemanticSimilarity`; the calibration mode remains available.
+
+## 2026-09-03 — Stage 14 AI usage and cost tracking
+
+- Inspected the installed OpenAI SDK declarations and mapped Responses `input_tokens`/`output_tokens` plus embeddings `prompt_tokens`/`total_tokens` into provider-neutral usage.
+- Extended vision and embeddings provider results with usage without exposing OpenAI SDK response types outside provider modules.
+- Added `AiUsageRepository` for creating and retrieving records in the existing `ai_usage` table.
+- Added isolated cost calculation with no pricing values configured until verified provider pricing is supplied.
+- Instrumented the existing evaluation corpus embedding call site; failed provider calls do not create successful usage records.
+- Added focused provider-usage, cost, repository-persistence, and mapping tests.
+- Did not modify the database schema or add budget guards, workers, dashboards, or a new production orchestration layer.

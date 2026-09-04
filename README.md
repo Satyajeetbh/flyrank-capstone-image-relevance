@@ -151,6 +151,12 @@ POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=fly
 
 The evaluator reports baseline top-1 accuracy from the highest-similarity candidate and guarded top-1 accuracy from the existing matching workflow. It also reports no-confident-match count, accepted incorrect matches, and expected images retrieved but rejected by the guard. The experiment-only calibration mode reports threshold sweeps without changing production configuration. Calibration evidence showed `0.660` and `0.661` at 10/10 guarded correctness with zero incorrect accepted matches, while `0.662` dropped to 9/10. The rounded `0.66` threshold was selected as the highest practical rounded threshold supported by the current 10-post corpus; it is not universally optimal. Evaluation does not call OpenAI or persist evaluation tables.
 
+## Stage 14 AI usage and cost tracking
+
+The AI usage layer maps provider usage into the existing `ai_usage` table for calls made by the evaluation corpus generator. Vision usage maps Responses API `input_tokens` and `output_tokens`; embedding usage maps `prompt_tokens` to input units and records zero output units because the installed embeddings response exposes no output-token field. Failed provider calls are not recorded as successful usage.
+
+Pricing is intentionally unconfigured until verified provider pricing is supplied. Cost calculation returns no estimate when pricing is absent; the database default is used only when no estimate is available. No OpenAI API call is required for builds or tests.
+
 ## TypeScript verification
 
 ```bash

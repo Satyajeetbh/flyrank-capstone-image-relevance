@@ -8,6 +8,7 @@ import {
   OpenAIEmbeddingProvider,
   imageMetadataToEmbeddingText,
   parseEmbeddingResponse,
+  parseEmbeddingUsage,
   postToEmbeddingText,
 } from "../../dist/providers/openai-embeddings.js";
 
@@ -101,4 +102,13 @@ test("classifies missing API configuration as a provider failure", () => {
 test("uses the fixed text embedding model", () => {
   assert.equal(OPENAI_EMBEDDING_MODEL, "text-embedding-3-small");
   assert.equal(OPENAI_EMBEDDING_DIMENSIONS, 1536);
+});
+
+test("maps embedding prompt usage to provider-neutral usage", () => {
+  assert.deepEqual(parseEmbeddingUsage({ prompt_tokens: 42, total_tokens: 42 }), {
+    provider: "openai",
+    model: "text-embedding-3-small",
+    inputUnits: 42,
+    outputUnits: 0,
+  });
 });

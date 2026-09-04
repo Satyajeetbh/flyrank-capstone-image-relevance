@@ -14,6 +14,8 @@ try {
   const { postRepository } = await import("../dist/repositories/posts.js");
   const { imageEmbeddingRepository } = await import("../dist/repositories/image-embeddings.js");
   const { postEmbeddingRepository } = await import("../dist/repositories/post-embeddings.js");
+  const { aiUsageRepository } = await import("../dist/repositories/ai-usage.js");
+  const { calculateEstimatedCost } = await import("../dist/application/ai-cost.js");
 
   closeDatabasePool = database.closeDatabasePool;
   const pool = database.pool;
@@ -54,8 +56,10 @@ try {
     generated.push({
       postId: post.id,
       imageId: image.id,
-      postEmbedding,
-      imageEmbedding,
+      postEmbedding: postEmbedding.output,
+      postUsage: postEmbedding.usage,
+      imageEmbedding: imageEmbedding.output,
+      imageUsage: imageEmbedding.usage,
     });
   }
 
@@ -67,6 +71,34 @@ try {
   for (const record of generated) {
     await postEmbeddingRepository.save(record.postId, OPENAI_EMBEDDING_MODEL, record.postEmbedding);
     await imageEmbeddingRepository.save(record.imageId, OPENAI_EMBEDDING_MODEL, record.imageEmbedding);
+
+    if (record.postUsage) {
+      const postUsageRecord = {
+        entityType: "post",
+        entityId: record.postId,
+        operation: "embedding",
+        usage: record.postUsage,
+      };
+      const postCost = calculateEstimatedCost(record.postUsage);
+      if (postCost !== null) {
+        postUsageRecord.estimatedCost = postCost;
+      }
+      await aiUsageRepository.create(postUsageRecord);
+    }
+
+    if (record.imageUsage) {
+      const imageUsageRecord = {
+        entityType: "image",
+        entityId: record.imageId,
+        operation: "embedding",
+        usage: record.imageUsage,
+      };
+      const imageCost = calculateEstimatedCost(record.imageUsage);
+      if (imageCost !== null) {
+        imageUsageRecord.estimatedCost = imageCost;
+      }
+      await aiUsageRepository.create(imageUsageRecord);
+    }
   }
 
   console.log(`Generated and persisted ${generated.length} post embeddings and ${generated.length} image embeddings.`);
