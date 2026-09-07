@@ -1,14 +1,16 @@
 # FlyRank AI Image Understanding & Content Matching Engine
 
-This repository contains the TypeScript foundation, Stage 2 PostgreSQL persistence layer, Stage 3 PostgreSQL application access layer, Stage 4 core repositories, Stage 5 domain/application contracts, Stage 6 vision provider, Stage 7 embedding provider, Stage 8 embedding persistence repositories, and Stage 13 retrieval evaluation for the FlyRank capstone project.
+This repository contains the TypeScript foundation, PostgreSQL persistence layer, application data-access layer, image metadata and matching contracts, OpenAI vision and embedding providers, pgvector retrieval, deterministic mismatch guarding, suggestion persistence and review, retrieval evaluation, AI usage/cost tracking, asynchronous image processing, and HTTP image ingestion for the FlyRank capstone project.
 
 ## Current scope
 
-Stage 2 establishes PostgreSQL locally and the initial versioned schema. Stage 3 adds a minimal TypeScript connection pool and database reachability check. Stage 4 adds basic repositories for `images` and `posts`. Stage 5 adds validated image-metadata types, deterministic mismatch-guard decisions, and small matching contracts. Stage 6 adds the OpenAI vision provider and Zod validation boundary for image understanding. Stage 7 adds the OpenAI text-embedding provider and deterministic text representations. Stage 8 adds embedding persistence repositories for images and posts. Stage 13 adds reproducible baseline-versus-guarded retrieval evaluation. It does not implement API endpoints, Redis/BullMQ, vector search beyond the existing exact retrieval, matching changes, or application business logic.
+The project now includes PostgreSQL and pgvector persistence, typed repositories, provider-neutral image metadata contracts, deterministic mismatch guarding, OpenAI vision and embedding providers, exact vector retrieval, suggestion persistence and human review, labeled retrieval evaluation, AI usage/cost tracking, asynchronous image processing through Redis/BullMQ, and a minimal Express HTTP layer.
 
-The embedding decision for the persistence schema is authoritative: OpenAI `text-embedding-3-small`, stored as `vector(1536)` for both image and post embeddings. This records the storage contract only; provider integration is a future stage.
+`POST /images` validates an image URL, creates the image record, creates and enqueues background processing, and returns without performing OpenAI processing in the HTTP request. `GET /posts/:id/images` performs semantic retrieval and deterministic guard evaluation. Review endpoints allow human approval or rejection of persisted suggestions.
 
-## Requirements
+The image-processing worker performs vision understanding, metadata validation/persistence, image embedding, and embedding persistence asynchronously.
+
+The project still does not include a frontend, authentication, ANN vector indexing, distributed infrastructure, or a generic service/DI framework.## Requirements
 
 - Node.js 20 or newer
 - npm
@@ -157,6 +159,52 @@ The AI usage layer maps provider usage into the existing `ai_usage` table for ca
 
 Pricing is intentionally unconfigured until verified provider pricing is supplied. Cost calculation returns no estimate when pricing is absent; the database default is used only when no estimate is available. No OpenAI API call is required for builds or tests.
 
+## Stage 15 asynchronous image processing
+
+Image processing is executed asynchronously through Redis and BullMQ rather than inside the HTTP request path.
+
+The processing flow is:
+
+```text
+Image processing job
+       ↓
+BullMQ / Redis
+       ↓
+Image processing worker
+       ↓
+Vision provider
+       ↓
+Validated image metadata
+       ↓
+Image embedding
+       ↓
+PostgreSQL persistence
+
+## Stage 16 image processing and ingestion
+
+The image-processing workflow now connects the existing vision, embedding, persistence, and asynchronous job components.
+
+Image processing flow:
+
+```text
+POST /images
+   ↓
+Validate request with Zod
+   ↓
+Create image record
+   ↓
+Create PostgreSQL processing job
+   ↓
+Enqueue BullMQ job
+   ↓
+Return HTTP 201
+   ↓
+Worker processes image asynchronously
+   ↓
+OpenAI vision → metadata → image embedding
+   ↓
+PostgreSQL persistence
+
 ## TypeScript verification
 
 ```bash
@@ -166,21 +214,23 @@ npm run build
 
 ## Repository layout
 
-- `src/api` — future transport-layer code
-- `src/application` — future application orchestration
-- `src/domain` — future domain model
-- `src/infrastructure` — future external-system adapters
-- `src/jobs` — future background job entry points
-- `src/providers` — future provider boundaries
-- `src/repositories` — future persistence boundaries
-- `src/schemas` — future input/output schemas
-- `tests/unit` — unit tests
-- `tests/integration` — integration tests
+- `src/api` — HTTP route handlers and transport validation
+- `src/application` — application workflows and orchestration boundaries
+- `src/domain` — provider-neutral domain contracts and deterministic business rules
+- `src/infrastructure` — PostgreSQL and Redis/BullMQ infrastructure
+- `src/jobs` — background-job-related application space
+- `src/providers` — external AI provider boundaries
+- `src/repositories` — PostgreSQL persistence boundaries
+- `src/schemas` — reserved for shared schemas where needed
+- `src/workers` — asynchronous BullMQ workers
+- `tests/unit` — focused unit tests
+- `tests/integration` — PostgreSQL, Redis, queue, worker, and HTTP integration tests
 - `tests/evaluation` — evaluation tests and fixtures
-- `scripts` — project maintenance scripts
+- `scripts` — project maintenance and evaluation scripts
 - `data/seed` — seed data
 - `data/evaluation` — evaluation data
 - `migrations` — versioned SQL migrations
 - `docs` — project documentation
 
 See `BUILDLOG.md` for implementation history and `EVIDENCE.md` for recorded verification evidence.
+

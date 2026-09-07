@@ -26,7 +26,10 @@
     "evaluate:retrieval": "npm run build && node --env-file=.env scripts/evaluate-retrieval.mjs",
     "evaluate:retrieval:calibrate": "npm run build && node --env-file=.env scripts/evaluate-retrieval.mjs --calibrate",
     "test:unit": "npm run build && node --test tests/unit/mismatch-guard.test.mjs tests/unit/openai-vision.test.mjs tests/unit/openai-embeddings.test.mjs tests/unit/ai-usage.test.mjs",
-    "test:unit:job-errors": "npm run build && node --test tests/unit/job-errors.test.mjs"
+    "test:unit:job-errors": "npm run build && node --test tests/unit/job-errors.test.mjs",
+    "worker:image-processing": "npm run build && node --env-file=.env dist/workers/start-image-processing-worker.js",
+    "test:integration:image-processing-retry": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/image-processing-retry.test.mjs",
+    "test:integration:image-ingestion": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/image-ingestion.test.mjs"
   },
   "keywords": [
     "typescript",

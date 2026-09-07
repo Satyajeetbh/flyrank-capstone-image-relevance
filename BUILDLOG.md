@@ -127,3 +127,30 @@
 - Instrumented the existing evaluation corpus embedding call site; failed provider calls do not create successful usage records.
 - Added focused provider-usage, cost, repository-persistence, and mapping tests.
 - Did not modify the database schema or add budget guards, workers, dashboards, or a new production orchestration layer.
+
+## 2026-09-04 — Stage 15 asynchronous image processing infrastructure
+
+- Added the PostgreSQL job repository for tracking image-processing job lifecycle with queued, running, completed, and failed states.
+- Added Redis infrastructure using ioredis and added Redis to Docker Compose with a persistent volume and healthcheck.
+- Added a BullMQ `image-processing` queue with bounded retries, exponential backoff, and completed/failed job retention.
+- Added an application boundary for creating a database job and enqueueing the corresponding BullMQ job.
+- Added the image-processing worker with explicit startup and graceful shutdown handling.
+- Added worker error classification so retryable failures can be retried while permanent failures are marked failed without further BullMQ retries.
+- Added handling for malformed model output as a permanent processing failure.
+- Added integration tests covering queue creation, job lifecycle, worker completion, retry behavior, permanent failures, and retry-safe reuse of existing image processing state.
+- Kept job lifecycle ownership in the worker and avoided adding a generic job framework, dependency-injection container, outbox system, or distributed orchestration layer.
+- Verified the implementation with TypeScript, build, unit, integration, worker, retry, and formatting checks.
+
+## 2026-09-07 — Stage 16 image processing and ingestion
+
+- Added the image metadata repository to persist validated vision metadata and map database confidence values into the domain contract.
+- Added the image-processing application service to coordinate vision understanding, metadata persistence, image embedding generation, and embedding persistence.
+- Reused existing metadata and embeddings when available so retries do not unnecessarily repeat completed AI work.
+- Integrated the image-processing service into the BullMQ worker while keeping job lifecycle state changes owned by the worker.
+- Added integration tests covering successful worker processing, retry behavior, permanent failures, and reuse of existing processing state.
+- Added the `POST /images` ingestion route with Zod request validation.
+- The ingestion route creates the image record, creates and enqueues the background processing job, and returns without performing OpenAI processing in the HTTP request.
+- Added a minimal Express application/server entrypoint and registered the existing retrieval, review, and image-ingestion routers.
+- Added integration tests verifying invalid requests return `400` and valid requests create the image and corresponding PostgreSQL/BullMQ processing job.
+- When queue scheduling fails after image creation, the API reports that the image was created but processing could not be queued rather than incorrectly reporting that image creation failed.
+- No database schema changes were made during Stage 16.
