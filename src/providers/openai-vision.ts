@@ -81,6 +81,17 @@ export function parseImageMetadata(rawOutput: unknown): ImageMetadata {
   return parsed.data;
 }
 
+export function parseVisionJson(rawOutput: string): unknown {
+  try {
+    return JSON.parse(rawOutput) as unknown;
+  } catch {
+    throw new OpenAIVisionError(
+      "OpenAI vision output was not valid JSON.",
+      "invalid_model_output",
+    );
+  }
+}
+
 export class OpenAIVisionProvider {
   private readonly client: OpenAI;
 
@@ -121,12 +132,7 @@ export class OpenAIVisionProvider {
       throw new OpenAIVisionError("OpenAI vision request failed.", "provider_api_failure");
     }
 
-    let rawOutput: unknown;
-    try {
-      rawOutput = JSON.parse(response.output_text) as unknown;
-    } catch {
-      throw new OpenAIVisionError("OpenAI vision output was not valid JSON.", "invalid_model_output");
-    }
+    const rawOutput = parseVisionJson(response.output_text);
 
     return {
       output: parseImageMetadata(rawOutput),

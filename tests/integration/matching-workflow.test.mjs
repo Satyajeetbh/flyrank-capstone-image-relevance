@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 
 import { SemanticImageRetrievalService } from "../../dist/application/semantic-image-retrieval.js";
-import { closeDatabasePool, pool } from "../../dist/infrastructure/database.js";
+import { pool } from "../../dist/infrastructure/database.js";
 import { imageEmbeddingRepository } from "../../dist/repositories/image-embeddings.js";
 import { imageRepository } from "../../dist/repositories/images.js";
 import { postEmbeddingRepository } from "../../dist/repositories/post-embeddings.js";
@@ -125,15 +125,11 @@ test("selects the highest-ranked candidate accepted by the mismatch guard", asyn
       noMatchSuggestions.rows.map((suggestion) => suggestion.id).sort(),
     );
   } finally {
-    try {
       for (const postId of postIds) {
         await pool.query("DELETE FROM posts WHERE id = $1", [postId]);
       }
       for (const imageId of imageIds) {
         await pool.query("DELETE FROM images WHERE id = $1", [imageId]);
       }
-    } finally {
-      await closeDatabasePool();
-    }
   }
 });

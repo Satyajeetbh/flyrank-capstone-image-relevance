@@ -71,7 +71,10 @@ test("retryable worker failure can be retried successfully", async () => {
       calls += 1;
 
       if (calls === 1) {
-        throw new Error("Temporary provider failure.");
+        throw new OpenAIVisionError(
+          "OpenAI vision request failed.",
+          "provider_api_failure",
+        );
       }
 
       return {
@@ -100,6 +103,208 @@ test("retryable worker failure can be retried successfully", async () => {
     const completionPromise = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error("Timed out waiting for retry completion."));
+      }, 10_000);
+
+      worker.once("completed", (job) => {
+        if (job.id === databaseJob.id) {
+          clearTimeout(timeout);
+          resolve(job);
+        }
+      });
+
+      worker.once("failed", (job, error) => {
+        if (job?.id === databaseJob.id && job.attemptsMade >= 2) {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      });
+    });
+
+    await imageProcessingQueue.add(
+      "process-image",
+      {
+        jobId: databaseJob.id,
+        imageId: image.id,
+      },
+      {
+        jobId: databaseJob.id,
+        attempts: 2,
+        backoff: {
+          type: "fixed",
+          delay: 100,
+        },
+      },
+    );
+
+    await completionPromise;
+
+    assert.equal(calls, 2);
+
+    const finalJob = await jobRepository.findById(databaseJob.id);
+
+    assert.ok(finalJob);
+    assert.equal(finalJob.status, "completed");
+    assert.equal(finalJob.attempts, 2);
+
+    const finalImage = await imageRepository.findById(image.id);
+
+    assert.ok(finalImage);
+    assert.equal(finalImage.processingStatus, "completed");
+  } finally {
+    await closeImageProcessingWorker(worker);
+  }
+});
+
+test("provider timeout is treated as retryable", async () => {
+  const image = await imageRepository.create({
+    sourceUrl: "https://example.com/timeout-test.jpg",
+  });
+
+  const databaseJob = await jobRepository.create({
+    type: "image-processing",
+  });
+
+  let calls = 0;
+
+  const processingService = {
+    async processImage() {
+      calls += 1;
+
+      if (calls === 1) {
+        throw new OpenAIVisionError(
+          "OpenAI vision request timed out.",
+          "provider_api_failure",
+        );
+      }
+
+      return {
+        imageId: image.id,
+        metadata: {
+          subject: "red fox",
+          category: "animal",
+          attributes: ["orange fur"],
+          caption: "A red fox in a forest.",
+          confidence: 0.95,
+        },
+        embeddingModel: OPENAI_EMBEDDING_MODEL,
+      };
+    },
+  };
+
+  const worker = createImageProcessingWorker(
+    jobRepository,
+    processingService,
+  );
+
+  try {
+    await worker.waitUntilReady();
+    await imageProcessingQueue.waitUntilReady();
+
+    const completionPromise = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("Timed out waiting for timeout retry completion."));
+      }, 10_000);
+
+      worker.once("completed", (job) => {
+        if (job.id === databaseJob.id) {
+          clearTimeout(timeout);
+          resolve(job);
+        }
+      });
+
+      worker.once("failed", (job, error) => {
+        if (job?.id === databaseJob.id && job.attemptsMade >= 2) {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      });
+    });
+
+    await imageProcessingQueue.add(
+      "process-image",
+      {
+        jobId: databaseJob.id,
+        imageId: image.id,
+      },
+      {
+        jobId: databaseJob.id,
+        attempts: 2,
+        backoff: {
+          type: "fixed",
+          delay: 100,
+        },
+      },
+    );
+
+    await completionPromise;
+
+    assert.equal(calls, 2);
+
+    const finalJob = await jobRepository.findById(databaseJob.id);
+
+    assert.ok(finalJob);
+    assert.equal(finalJob.status, "completed");
+    assert.equal(finalJob.attempts, 2);
+
+    const finalImage = await imageRepository.findById(image.id);
+
+    assert.ok(finalImage);
+    assert.equal(finalImage.processingStatus, "completed");
+  } finally {
+    await closeImageProcessingWorker(worker);
+  }
+});
+
+test("provider rate limit is treated as retryable", async () => {
+  const image = await imageRepository.create({
+    sourceUrl: "https://example.com/rate-limit-test.jpg",
+  });
+
+  const databaseJob = await jobRepository.create({
+    type: "image-processing",
+  });
+
+  let calls = 0;
+
+  const processingService = {
+    async processImage() {
+      calls += 1;
+
+      if (calls === 1) {
+        throw new OpenAIVisionError(
+          "OpenAI vision request was rate limited.",
+          "provider_api_failure",
+        );
+      }
+
+      return {
+        imageId: image.id,
+        metadata: {
+          subject: "red fox",
+          category: "animal",
+          attributes: ["orange fur"],
+          caption: "A red fox in a forest.",
+          confidence: 0.95,
+        },
+        embeddingModel: OPENAI_EMBEDDING_MODEL,
+      };
+    },
+  };
+
+  const worker = createImageProcessingWorker(
+    jobRepository,
+    processingService,
+  );
+
+  try {
+    await worker.waitUntilReady();
+    await imageProcessingQueue.waitUntilReady();
+
+    const completionPromise = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(
+          new Error("Timed out waiting for rate-limit retry completion."),
+        );
       }, 10_000);
 
       worker.once("completed", (job) => {
@@ -269,6 +474,76 @@ test("existing metadata is reused instead of reprocessing vision", async () => {
   } finally {
     await closeImageProcessingWorker(worker);
   }
+});
+
+test("repeated processing of the same image reuses persisted metadata and embedding", async () => {
+  const image = await imageRepository.create({
+    sourceUrl: "https://example.com/repeated-processing.jpg",
+  });
+
+  let visionCalls = 0;
+  let embeddingCalls = 0;
+
+  const metadata = {
+    subject: "red fox",
+    category: "animal",
+    attributes: ["orange fur"],
+    caption: "A red fox in a forest.",
+    confidence: 0.95,
+  };
+
+  const processingService = {
+    async processImage() {
+      const existingMetadata = await imageMetadataRepository.findByImageId(
+        image.id,
+      );
+
+      if (!existingMetadata) {
+        visionCalls += 1;
+        await imageMetadataRepository.save(image.id, metadata);
+      }
+
+      const existingEmbedding = await imageEmbeddingRepository.findByImageId(
+        image.id,
+        OPENAI_EMBEDDING_MODEL,
+      );
+
+      if (!existingEmbedding) {
+        embeddingCalls += 1;
+        await imageEmbeddingRepository.save(
+          image.id,
+          OPENAI_EMBEDDING_MODEL,
+          new Array(1536).fill(0.01),
+        );
+      }
+
+      return {
+        imageId: image.id,
+        metadata,
+        embeddingModel: OPENAI_EMBEDDING_MODEL,
+      };
+    },
+  };
+
+  await processingService.processImage();
+  await processingService.processImage();
+
+  assert.equal(visionCalls, 1);
+  assert.equal(embeddingCalls, 1);
+
+  const persistedMetadata = await imageMetadataRepository.findByImageId(
+    image.id,
+  );
+
+  assert.ok(persistedMetadata);
+  assert.equal(persistedMetadata.subject, "red fox");
+
+  const persistedEmbedding = await imageEmbeddingRepository.findByImageId(
+    image.id,
+    OPENAI_EMBEDDING_MODEL,
+  );
+
+  assert.ok(persistedEmbedding);
 });
 
 test("existing embedding can be detected for retry-safe persistence", async () => {

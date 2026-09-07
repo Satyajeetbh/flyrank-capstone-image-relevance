@@ -103,6 +103,27 @@ test("POST /images creates an image and queues processing", async () => {
   });
 });
 
+test("allows duplicate source URLs as separate image records", async () => {
+  const sourceUrl = "https://example.com/duplicate.jpg";
+
+  const first = await requestJson({
+    sourceUrl,
+  });
+
+  const second = await requestJson({
+    sourceUrl,
+  });
+
+  assert.equal(first.status, 201);
+  assert.equal(second.status, 201);
+
+  assert.notEqual(first.body.image.id, second.body.image.id);
+  assert.equal(first.body.image.sourceUrl, sourceUrl);
+  assert.equal(second.body.image.sourceUrl, sourceUrl);
+});
+
+
+
 test.after(async () => {
   await closeImageProcessingQueue();
   await closeRedisConnection();

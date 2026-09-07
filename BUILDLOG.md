@@ -141,7 +141,7 @@
 - Kept job lifecycle ownership in the worker and avoided adding a generic job framework, dependency-injection container, outbox system, or distributed orchestration layer.
 - Verified the implementation with TypeScript, build, unit, integration, worker, retry, and formatting checks.
 
-## 2026-09-07 — Stage 16 image processing and ingestion
+## 2026-09-06 — Stage 16 image processing and ingestion
 
 - Added the image metadata repository to persist validated vision metadata and map database confidence values into the domain contract.
 - Added the image-processing application service to coordinate vision understanding, metadata persistence, image embedding generation, and embedding persistence.
@@ -154,3 +154,20 @@
 - Added integration tests verifying invalid requests return `400` and valid requests create the image and corresponding PostgreSQL/BullMQ processing job.
 - When queue scheduling fails after image creation, the API reports that the image was created but processing could not be queued rather than incorrectly reporting that image creation failed.
 - No database schema changes were made during Stage 16.
+
+## 2026-09-08 — Stage 17 hardening and failure behavior
+
+- AI-assisted hardening review of the image-processing, retrieval, matching, ingestion, and review workflows against the Master Brief failure cases.
+- Added explicit parsing of malformed vision JSON so invalid model output is classified as `invalid_model_output` instead of being treated as a successful response.
+- Verified that provider/API failures remain separately classified as `provider_api_failure`, allowing the worker to retry transient provider failures.
+- Added integration coverage for provider failure, timeout, and rate-limit retry behavior using deterministic provider-boundary failure simulation rather than flaky live network tests.
+- Verified that permanent image-processing failures are surfaced to BullMQ as `UnrecoverableError`, preventing permanent failures from being retried by the queue.
+- Added coverage for repeated processing of an already-persisted image. Existing valid metadata and image embeddings are reused so completed AI work is not unnecessarily repeated.
+- Verified that completed images without an image embedding are excluded from semantic retrieval rather than producing an invalid candidate.
+- Verified deterministic low-confidence, mismatch, and `NO_CONFIDENT_MATCH` behavior through the existing guard and matching workflow tests.
+- Added API hardening coverage for invalid image-ingestion requests and invalid/unknown suggestion review actions.
+- Verified that repository/database errors are not swallowed and reach the API error boundary as HTTP 500 responses.
+- Preserved duplicate HTTP ingestion of the same source URL as currently supported behavior. The Stage 17 idempotency requirement is limited to safely reprocessing an existing persisted image; no `source_url` uniqueness constraint or duplicate-ingestion identity model was introduced.
+- Removed per-test closing of the shared PostgreSQL pool from integration tests so the full integration suite can run against the shared application database connection without interfering with subsequent tests.
+- No database schema or migration changes were made during Stage 17.
+- Final verification passed for TypeScript typechecking, build, unit tests, integration tests, image-ingestion tests, image-processing job/worker/retry tests, and `git diff --check`.

@@ -426,3 +426,22 @@ The successful HTTP response contained the created image identifier and processi
 The ingestion route performs request validation and persistence/enqueue operations only. It does not call the OpenAI vision or embedding providers; expensive AI processing remains owned by the asynchronous worker.
 
 No database schema or migration changes were made during Stage 16.
+
+## Stage 17 hardening verification
+
+Stage 17 hardened the failure behavior of the image-processing, retrieval, matching, ingestion, and review workflows against the failure cases specified in the Master Brief.
+
+### Final verification
+
+The following commands were executed successfully:
+
+```bash
+npm run typecheck
+npm run build
+npm run test:unit
+npm run test:integration
+npm run test:integration:image-ingestion
+npm run test:integration:image-processing-jobs
+npm run test:integration:image-processing-worker
+npm run test:integration:image-processing-retry
+git diff --check

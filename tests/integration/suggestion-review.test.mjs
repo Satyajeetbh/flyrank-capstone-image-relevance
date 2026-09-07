@@ -108,6 +108,18 @@ test("supports inspecting and recording human decisions for a suggestion", async
     const unknownSuggestion = await requestJson(started.baseUrl, `/suggestions/${randomUUID()}`);
     assert.equal(unknownSuggestion.status, 404);
 
+    const unknownApproval = await requestJson(
+      started.baseUrl,
+      `/suggestions/${randomUUID()}/approve`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reviewer: "alice" }),
+      },
+    );
+
+    assert.equal(unknownApproval.status, 404);
+
     const approval = await requestJson(started.baseUrl, `/suggestions/${suggestion.id}/approve`, {
       method: "POST",
       headers: { "content-type": "application/json" },

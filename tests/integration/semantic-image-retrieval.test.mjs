@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 
 import { SemanticImageRetrievalService } from "../../dist/application/semantic-image-retrieval.js";
-import { closeDatabasePool, pool } from "../../dist/infrastructure/database.js";
+import { pool } from "../../dist/infrastructure/database.js";
 import { imageEmbeddingRepository } from "../../dist/repositories/image-embeddings.js";
 import { imageRepository } from "../../dist/repositories/images.js";
 import { postEmbeddingRepository } from "../../dist/repositories/post-embeddings.js";
@@ -108,15 +108,54 @@ test("retrieves ranked semantic image candidates for a post", async () => {
         error.kind === "post_embedding_not_found",
     );
   } finally {
-    try {
       for (const postId of postIds) {
         await pool.query("DELETE FROM posts WHERE id = $1", [postId]);
       }
       for (const imageId of imageIds) {
         await pool.query("DELETE FROM images WHERE id = $1", [imageId]);
       }
-    } finally {
-      await closeDatabasePool();
-    }
+  }
+});
+
+test("excludes completed images that have no embedding", async () => {
+  const runId = randomUUID();
+  const imageIds = [];
+  const postIds = [];
+
+  try {
+    const post = await postRepository.create({
+      title: `Missing image embedding ${runId}`,
+      content: "Image without an embedding must not be retrieved.",
+      expectedSubject: "fox",
+      expectedCategory: "animal",
+    });
+    postIds.push(post.id);
+
+    await postEmbeddingRepository.save(
+      post.id,
+      EMBEDDING_MODEL,
+      vector(1, 0),
+    );
+
+    const image = await createRetrievableImage(
+      runId,
+      "no-embedding",
+      "red fox",
+      "animal",
+    );
+    imageIds.push(image.id);
+
+    const service = new SemanticImageRetrievalService();
+    const result = await service.retrieve(post.id, 5);
+
+    assert.equal(result.candidates.length, 0);
+  } finally {
+      for (const postId of postIds) {
+        await pool.query("DELETE FROM posts WHERE id = $1", [postId]);
+      }
+
+      for (const imageId of imageIds) {
+        await pool.query("DELETE FROM images WHERE id = $1", [imageId]);
+      }
   }
 });

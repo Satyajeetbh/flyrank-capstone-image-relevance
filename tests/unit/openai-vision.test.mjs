@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   OpenAIVisionError,
   parseImageMetadata,
+  parseVisionJson,
   parseVisionUsage,
 } from "../../dist/providers/openai-vision.js";
 
@@ -27,6 +28,25 @@ function assertInvalidOutput(output) {
 
 test("converts valid structured output to ImageMetadata", () => {
   assert.deepEqual(parseImageMetadata(validOutput()), validOutput());
+});
+
+test("rejects malformed JSON output", () => {
+  assert.throws(
+    () => parseVisionJson('{"subject":"red fox"'),
+    (error) =>
+      error instanceof OpenAIVisionError &&
+      error.kind === "invalid_model_output",
+  );
+});
+
+test("classifies provider failures separately from invalid model output", () => {
+  const error = new OpenAIVisionError(
+    "OpenAI vision request failed.",
+    "provider_api_failure",
+  );
+
+  assert.equal(error.kind, "provider_api_failure");
+  assert.notEqual(error.kind, "invalid_model_output");
 });
 
 test("rejects an empty subject", () => {

@@ -205,6 +205,24 @@ OpenAI vision → metadata → image embedding
    ↓
 PostgreSQL persistence
 
+```md
+## Stage 17 hardening and failure behavior
+
+The image-processing and matching workflows include deterministic failure handling for the main failure cases identified in the project brief.
+
+### AI/provider failures
+
+Vision provider failures are classified separately from invalid model output:
+
+```text
+Provider/API failure
+        ↓
+provider_api_failure
+        ↓
+Retryable worker failure
+        ↓
+BullMQ retry
+
 ## TypeScript verification
 
 ```bash
