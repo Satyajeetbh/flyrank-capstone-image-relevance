@@ -1,0 +1,13 @@
+{
+"subject": "apple",
+"category": "food",
+"attributes": [
+"red and yellow skin",
+"brown stem attached",
+"round shape",
+"smooth surface",
+"resting on wooden table"
+],
+"caption": "A single red and yellow apple sits on a light wooden surface.",
+"confidence": 0.99
+}

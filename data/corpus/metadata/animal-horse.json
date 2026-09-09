@@ -1,0 +1,13 @@
+{
+"subject": "horse",
+"category": "animals",
+"attributes": [
+"brown bay coat",
+"dark mane and tail",
+"white facial marking",
+"one white pastern sock",
+"standing in a grassy pasture"
+],
+"caption": "A brown horse stands in a lush green pasture with trees in the background.",
+"confidence": 0.99
+}

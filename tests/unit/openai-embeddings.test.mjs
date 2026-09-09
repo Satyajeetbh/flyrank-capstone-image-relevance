@@ -6,11 +6,14 @@ import {
   OPENAI_EMBEDDING_MODEL,
   OpenAIEmbeddingError,
   OpenAIEmbeddingProvider,
-  imageMetadataToEmbeddingText,
   parseEmbeddingResponse,
   parseEmbeddingUsage,
-  postToEmbeddingText,
 } from "../../dist/providers/openai-embeddings.js";
+
+import {
+  imageMetadataToEmbeddingText,
+  postToEmbeddingText,
+} from "../../dist/providers/embedding.js";
 
 function validMetadata() {
   return {

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { ImageMetadata } from "../domain/image-metadata.js";
 import type { ProviderResult, ProviderUsage } from "../domain/ai-usage.js";
+import type { VisionInput,VisionProvider } from "./vision.js";
 
 export const OPENAI_VISION_MODEL = "gpt-4.1-mini" as const;
 
@@ -31,10 +32,6 @@ const imageMetadataJsonSchema = {
 
 const IMAGE_UNDERSTANDING_INSTRUCTION =
   "Identify the primary visual subject and its relevant category and attributes. Return only the requested structured fields; do not add commentary.";
-
-export interface OpenAIVisionInput {
-  imageUrl: string;
-}
 
 export type OpenAIVisionErrorKind = "provider_api_failure" | "invalid_model_output";
 
@@ -92,7 +89,7 @@ export function parseVisionJson(rawOutput: string): unknown {
   }
 }
 
-export class OpenAIVisionProvider {
+export class OpenAIVisionProvider implements VisionProvider {
   private readonly client: OpenAI;
 
   public constructor() {
@@ -104,7 +101,7 @@ export class OpenAIVisionProvider {
     this.client = new OpenAI({ apiKey });
   }
 
-  public async understandImage(input: OpenAIVisionInput): Promise<ProviderResult<ImageMetadata>> {
+  public async understandImage(input: VisionInput): Promise<ProviderResult<ImageMetadata>> {
     let response: OpenAI.Responses.Response;
 
     try {

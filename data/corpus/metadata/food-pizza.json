@@ -1,0 +1,13 @@
+{
+"subject": "pizza",
+"category": "food",
+"attributes": [
+"melted browned cheese",
+"red tomato sauce",
+"square grid cut",
+"golden baked crust",
+"inside cardboard delivery box"
+],
+"caption": "A round cheese pizza cut into square slices rests in a cardboard delivery box.",
+"confidence": 0.99
+}

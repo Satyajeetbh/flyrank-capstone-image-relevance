@@ -8,8 +8,9 @@ import { imageEmbeddingRepository } from "../../dist/repositories/image-embeddin
 import { imageRepository } from "../../dist/repositories/images.js";
 import { postEmbeddingRepository } from "../../dist/repositories/post-embeddings.js";
 import { postRepository } from "../../dist/repositories/posts.js";
+import { getEmbeddingModel } from "../../dist/providers/embedding-config.js";
 
-const EMBEDDING_MODEL = "text-embedding-3-small";
+const EMBEDDING_MODEL = getEmbeddingModel();
 const DIMENSIONS = 1536;
 const tolerance = 1e-9;
 

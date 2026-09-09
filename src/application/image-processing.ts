@@ -1,9 +1,7 @@
 import type { ImageMetadata } from "../domain/image-metadata.js";
-import type { OpenAIVisionProvider } from "../providers/openai-vision.js";
-import type { OpenAIEmbeddingProvider } from "../providers/openai-embeddings.js";
-import {
-  OPENAI_EMBEDDING_MODEL,
-} from "../providers/openai-embeddings.js";
+import type { VisionProvider } from "../providers/vision.js";
+import type { EmbeddingProvider } from "../providers/embedding.js";
+import { getEmbeddingModel } from "../providers/embedding-config.js";
 import { calculateEstimatedCost } from "./ai-cost.js";
 import {
   imageMetadataRepository,
@@ -18,6 +16,28 @@ import {
   type AiUsageRepository,
 } from "../repositories/ai-usage.js";
 import type { ImageRepository } from "../repositories/images.js";
+import {
+  assertWithinAiBudget,
+  DEFAULT_AI_USAGE_BUDGET_USD,
+} from "../domain/ai-budget.js";
+
+function readAiUsageBudget(): number {
+  const value = process.env.AI_USAGE_BUDGET_USD;
+
+  if (!value?.trim()) {
+    return DEFAULT_AI_USAGE_BUDGET_USD;
+  }
+
+  const budget = Number(value);
+
+  if (!Number.isFinite(budget) || budget <= 0) {
+    throw new Error(
+      "AI_USAGE_BUDGET_USD must be a positive finite number.",
+    );
+  }
+
+  return budget;
+}
 
 export interface ProcessImageInput {
   imageId: string;
@@ -32,11 +52,12 @@ export interface ProcessImageResult {
 export class ImageProcessingService {
   public constructor(
     private readonly images: ImageRepository,
-    private readonly visionProvider: OpenAIVisionProvider,
-    private readonly embeddingProvider: OpenAIEmbeddingProvider,
+    private readonly visionProvider: VisionProvider,
+    private readonly embeddingProvider: EmbeddingProvider,
     private readonly metadataRepository: ImageMetadataRepository = imageMetadataRepository,
     private readonly embeddingRepository: ImageEmbeddingRepository = imageEmbeddingRepository,
     private readonly usageRepository: AiUsageRepository = aiUsageRepository,
+    private readonly usageBudgetUsd: number = readAiUsageBudget(),
   ) {}
 
   public async processImage(
@@ -47,6 +68,7 @@ export class ImageProcessingService {
     if (!image) {
       throw new Error(`Image ${input.imageId} was not found.`);
     }
+    const embeddingModel = getEmbeddingModel();
 
     const existingMetadata = await this.metadataRepository.findByImageId(
       input.imageId,
@@ -63,7 +85,15 @@ export class ImageProcessingService {
         confidence: existingMetadata.confidence,
       };
     } else {
+      const currentEstimatedCost =
+        await this.usageRepository.getTotalEstimatedCost();
+
+      assertWithinAiBudget(
+        currentEstimatedCost,
+        this.usageBudgetUsd,
+      );
       const visionResult = await this.visionProvider.understandImage({
+        imageId: input.imageId,
         imageUrl: image.sourceUrl,
       });
 
@@ -84,16 +114,23 @@ export class ImageProcessingService {
 
     const existingEmbedding = await this.embeddingRepository.findByImageId(
       input.imageId,
-      OPENAI_EMBEDDING_MODEL,
+      embeddingModel,
     );
 
     if (!existingEmbedding) {
+      const currentEstimatedCost =
+        await this.usageRepository.getTotalEstimatedCost();
+
+      assertWithinAiBudget(
+        currentEstimatedCost,
+        this.usageBudgetUsd,
+      );
       const embeddingResult =
         await this.embeddingProvider.embedImageMetadata(metadata);
 
       await this.embeddingRepository.save(
         input.imageId,
-        OPENAI_EMBEDDING_MODEL,
+        embeddingModel,
         embeddingResult.output,
       );
 
@@ -111,7 +148,7 @@ export class ImageProcessingService {
     return {
       imageId: input.imageId,
       metadata,
-      embeddingModel: OPENAI_EMBEDDING_MODEL,
+      embeddingModel,
     };
   }
 }

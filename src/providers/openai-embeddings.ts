@@ -3,27 +3,15 @@ import { z } from "zod";
 
 import type { ImageMetadata } from "../domain/image-metadata.js";
 import type { ProviderResult, ProviderUsage } from "../domain/ai-usage.js";
+import {
+  imageMetadataToEmbeddingText,
+  postToEmbeddingText,
+  type EmbeddingProvider,
+  type PostEmbeddingInput,
+} from "./embedding.js";
 
 export const OPENAI_EMBEDDING_MODEL = "text-embedding-3-small" as const;
 export const OPENAI_EMBEDDING_DIMENSIONS = 1536 as const;
-
-export interface PostEmbeddingInput {
-  title: string;
-  content: string;
-}
-
-export function imageMetadataToEmbeddingText(metadata: ImageMetadata): string {
-  return [
-    `Subject: ${metadata.subject}`,
-    `Category: ${metadata.category}`,
-    `Attributes: ${metadata.attributes.join(", ")}`,
-    `Caption: ${metadata.caption}`,
-  ].join("\n");
-}
-
-export function postToEmbeddingText(input: PostEmbeddingInput): string {
-  return [`Title: ${input.title}`, `Content: ${input.content}`].join("\n");
-}
 
 export type OpenAIEmbeddingErrorKind = "provider_api_failure" | "invalid_embedding_output";
 
@@ -81,7 +69,7 @@ export function parseEmbeddingResponse(rawResponse: unknown): number[] {
   return embedding.data;
 }
 
-export class OpenAIEmbeddingProvider {
+export class OpenAIEmbeddingProvider implements EmbeddingProvider {
   private readonly client: OpenAI;
 
   public constructor() {

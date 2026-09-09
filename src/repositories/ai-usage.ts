@@ -92,8 +92,7 @@ export class AiUsageRepository {
           input_units, output_units, estimated_cost, status, created_at
       `,
       [
-        input.entityType,
-        input.entityId,
+        input.entityType,        input.entityId,
         input.operation,
         input.usage.provider,
         input.usage.model,
@@ -140,6 +139,23 @@ export class AiUsageRepository {
     );
 
     return result.rows.map(mapAiUsageRow);
+  }
+  public async getTotalEstimatedCost(): Promise<number> {
+    const result = await this.database.query<{ total_cost: number | string | null }>(
+      `
+        SELECT COALESCE(SUM(estimated_cost), 0) AS total_cost
+        FROM ai_usage
+        WHERE status = 'completed'
+      `,
+    );
+
+    const totalCost = result.rows[0]?.total_cost;
+
+    if (totalCost === undefined || totalCost === null) {
+      return 0;
+    }
+
+    return parseNonNegativeNumber(totalCost, "AI usage total estimated cost");
   }
 }
 

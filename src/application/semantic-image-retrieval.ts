@@ -1,4 +1,4 @@
-import { OPENAI_EMBEDDING_MODEL } from "../providers/openai-embeddings.js";
+import { getEmbeddingModel } from "../providers/embedding-config.js";
 import { evaluateMismatchGuard } from "../domain/mismatch-guard.js";
 import type { GuardDecision } from "../domain/mismatch-guard.js";
 import type { MatchingCandidateResult, MatchingResult } from "../domain/matching-result.js";
@@ -62,7 +62,12 @@ export class SemanticImageRetrievalService {
       throw new SemanticRetrievalError("Post was not found.", "post_not_found");
     }
 
-    const postEmbedding = await this.postEmbeddings.findByPostId(post.id, OPENAI_EMBEDDING_MODEL);
+    const embeddingModel = getEmbeddingModel();
+
+    const postEmbedding = await this.postEmbeddings.findByPostId(
+      post.id,
+      embeddingModel,
+    );
     if (!postEmbedding) {
       throw new SemanticRetrievalError("Post embedding was not found.", "post_embedding_not_found");
     }
@@ -71,7 +76,7 @@ export class SemanticImageRetrievalService {
       postId: post.id,
       candidates: await this.imageEmbeddings.findSimilar(
         postEmbedding.embedding,
-        OPENAI_EMBEDDING_MODEL,
+        embeddingModel,
         limit,
       ),
     };

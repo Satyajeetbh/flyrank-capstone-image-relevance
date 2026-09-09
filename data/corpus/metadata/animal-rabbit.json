@@ -1,0 +1,12 @@
+{
+"subject": "rabbit",
+"category": "animals",
+"attributes": [
+"brownish-gray fur",
+"long upright ears",
+"dark rounded eye",
+"crouching posture in green grass"
+],
+"caption": "A small brown rabbit sits alert in a patch of green grass.",
+"confidence": 0.98
+}

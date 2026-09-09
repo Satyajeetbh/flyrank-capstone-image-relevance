@@ -15,6 +15,10 @@ export const AI_USAGE_PRICING: Readonly<Record<string, UsagePricing>> =
       inputCostPerMillion: 0.02,
       outputCostPerMillion: 0,
     },
+    "gemini-embedding-2": {
+          inputCostPerMillion: 0,
+          outputCostPerMillion: 0,
+        },
   });
 
 export function calculateEstimatedCost(
