@@ -267,17 +267,9 @@ offline:
 POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run evaluate:retrieval
 ```
 
-The evaluator reports baseline top-1 accuracy from the
-highest-similarity candidate and guarded top-1 accuracy from the
-existing matching workflow. It also reports no-confident-match count,
-accepted incorrect matches, and expected images retrieved but rejected
-by the guard.  The experiment-only calibration mode reports threshold
-sweeps without changing production configuration. Calibration evidence
-showed `0.660` and `0.661` at 10/10 guarded correctness with zero
-incorrect accepted matches, while `0.662` dropped to 9/10. The rounded
-`0.66` threshold was selected as the highest practical rounded threshold
-supported by the current 10-post corpus; it is not universally optimal.
-Evaluation does not call OpenAI or persist evaluation tables.The current deterministic guard uses a provisional semantic similarity threshold of 0.50 and a vision-confidence threshold of 0.70. The 0.50 similarity threshold was selected from the current 10-post labeled evaluation set because it produced the strongest observed guarded result on this corpus. It is corpus-specific and should be re-tuned when the labeled evaluation set or embedding configuration changes.
+The evaluator reports baseline top-1 accuracy from the highest-similarity candidate and guarded top-1 accuracy from the existing matching workflow. It also reports no-confident-match count, accepted incorrect matches, and expected images retrieved but rejected by the guard. The experiment-only calibration mode reports threshold sweeps without changing production configuration. Historical calibration evidence from the earlier OpenAI embedding configuration showed `0.660` and `0.661` at 10/10 guarded correctness with zero incorrectly accepted matches, while `0.662` dropped to 9/10. That historical `0.66` threshold is not the current production configuration.
+
+The current deterministic guard uses a provisional semantic similarity threshold of `0.50` and a vision-confidence threshold of `0.70`. With the current Gemini Embedding 2 configuration and 10-post labeled evaluation set, the `0.50` threshold produced the strongest observed current guarded result: 9/10 guarded correctness, with zero incorrectly accepted matches and one `NO_CONFIDENT_MATCH`. The threshold is corpus- and embedding-configuration-specific and should be re-tuned when the labeled evaluation set or embedding configuration changes. Evaluation does not call OpenAI or persist evaluation tables.
 
 ## Stage 14 AI usage and cost tracking
 

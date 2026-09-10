@@ -37,3 +37,30 @@ test("loads the labeled evaluation set and derives retrieval metrics", async () 
   assert.equal(metrics.acceptedIncorrectMatches, 1);
   assert.equal(metrics.expectedRetrievedButRejectedCount, 1);
 });
+
+test("records a no-confident-match outcome when the baseline candidate is incorrect and the guard rejects it", () => {
+  const expectedImageId = "11111111-1111-4111-8111-111111111111";
+  const incorrectImageId = "22222222-2222-4222-8222-222222222222";
+
+  const metrics = calculateRetrievalMetrics([
+    {
+      expectedImageId,
+      baselineImageId: incorrectImageId,
+      baselineRetrievedImageIds: [incorrectImageId],
+      guardedDecision: "NO_CONFIDENT_MATCH",
+      guardedImageId: null,
+      guardedCandidates: [
+        {
+          imageId: incorrectImageId,
+          guardDecision: "REJECT",
+        },
+      ],
+    },
+  ]);
+
+  assert.equal(metrics.baselineIncorrect, 1);
+  assert.equal(metrics.guardedCorrect, 0);
+  assert.equal(metrics.guardedIncorrect, 1);
+  assert.equal(metrics.noConfidentMatchCount, 1);
+  assert.equal(metrics.acceptedIncorrectMatches, 0);
+});

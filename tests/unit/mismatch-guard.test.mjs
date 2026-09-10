@@ -106,3 +106,31 @@ test("accepts labels that differ only by case and surrounding whitespace", () =>
   assert.equal(result.decision, "ACCEPT");
   assert.equal(result.reasonCode, null);
 });
+
+test("accepts a subject when the expected subject is a token within a richer candidate description", () => {
+  const result = evaluateMismatchGuard({
+    expectedSubject: "mountain",
+    expectedCategory: "landscapes",
+    candidateSubject: "forested mountain range",
+    candidateCategory: "landscapes",
+    visionConfidence: 0.99,
+    semanticSimilarity: 0.556,
+  });
+
+  assert.equal(result.decision, "ACCEPT");
+  assert.equal(result.reasonCode, null);
+});
+
+test("rejects unrelated subjects even when they share no semantic label token", () => {
+  const result = evaluateMismatchGuard({
+    expectedSubject: "red fox",
+    expectedCategory: "animals",
+    candidateSubject: "gray wolf",
+    candidateCategory: "animals",
+    visionConfidence: 0.99,
+    semanticSimilarity: 0.6,
+  });
+
+  assert.equal(result.decision, "REJECT");
+  assert.equal(result.reasonCode, "SUBJECT_MISMATCH");
+});

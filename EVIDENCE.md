@@ -121,26 +121,32 @@ npm run build
 
 The following commands were executed successfully:
 
-``` bash
+```bash
 npm run typecheck
 npm run build
-npm run test:unit
+node --test tests/unit/mismatch-guard.test.mjs
 git diff --check
 ```
 
 Results:
 
-``` text
+```text
 TypeScript typecheck passed.
 TypeScript build passed.
-10 unit tests passed, 0 failed.
+13 mismatch-guard unit tests passed, 0 failed.
 git diff --check passed with no whitespace errors.
 ```
 
-The unit tests execute the compiled deterministic mismatch guard and
-cover acceptance, rejection, review, missing metadata, and both
-threshold boundaries. No PostgreSQL, provider, or application
-integration was added or required for Stage 5.
+The deterministic mismatch-guard tests cover acceptance, rejection, review,
+missing metadata, similarity-threshold boundaries, vision-confidence
+boundaries, normalized subject/category labels, compatible subject wording,
+and unrelated subject rejection.
+
+The guard uses deterministic rules only and does not call PostgreSQL,
+OpenAI, Gemini, or other providers.
+
+The Stage 5 domain/application foundation was implemented without adding
+API routes, background processing, vector search, or provider-specific logic.
 
 ## Stage 6 OpenAI vision provider verification
 
@@ -638,21 +644,46 @@ configuration.
 
 ## Current evaluation — Gemini Embedding 2
 
-The current labeled evaluation was rerun using the Gemini Embedding 2 image-metadata and post embeddings with the deterministic guard threshold set to `0.50`.
+The current labeled evaluation was rerun using the Gemini Embedding 2
+image-metadata and post embeddings with the deterministic guard threshold
+set to `0.50`.
 
 Results across 10 labeled posts:
 
-- Baseline correct: **8/10**
-- Baseline incorrect: **2/10**
-- Guarded correct: **8/10**
-- Guarded incorrect: **2/10**
-- Explicit `NO_CONFIDENT_MATCH`: **2**
-- Accepted incorrect matches: **0**
-- Expected candidates retrieved but rejected by the guard: **2**
-- Guarded top-1 precision on accepted matches: **100%**
+* Baseline correct: **8/10**
+* Baseline incorrect: **2/10**
+* Guarded correct: **9/10**
+* Guarded incorrect: **1/10**
+* Explicit `NO_CONFIDENT_MATCH`: **1**
+* Accepted incorrect matches: **0**
+* Expected candidates retrieved but rejected by the guard: **1**
+* Guarded top-1 precision on accepted matches: **100%**
 
-The two posts without a confident match were the mountain and laptop cases. The mountain candidate was rejected because of a subject mismatch; the laptop candidate was rejected because its semantic similarity was below the threshold.
+The gray-wolf case demonstrates the value of the guard: the highest-similarity
+baseline candidate was a red fox, while the expected gray-wolf image appeared
+lower in the ranked candidates. The guard rejected the incompatible candidate
+and accepted the expected wolf candidate.
 
-A threshold sweep on the current 10-post labeled set showed that `0.50` produced the strongest observed result. The threshold remains provisional and corpus-specific; it must be re-tuned when the labeled evaluation set or embedding configuration changes.
+The laptop case demonstrates the `NO_CONFIDENT_MATCH` behavior: the
+highest-similarity candidate was incorrect and the expected laptop image did
+not meet the semantic similarity threshold, so the workflow did not force an
+incorrect recommendation.
 
-The earlier Stage 13 `0.66` calibration remains historical evidence from the previous embedding/evaluation configuration and is superseded by this current Gemini Embedding 2 calibration.
+The mountain case is accepted after the deterministic subject-compatibility
+correction. The guard now permits concise expected subjects such as
+`mountain` to match richer validated metadata such as
+`forested mountain range`, while still rejecting unrelated subjects such as
+`red fox` and `gray wolf`.
+
+A threshold sweep on the current 10-post labeled set showed that `0.50`
+produced the strongest observed result with the current Gemini Embedding 2
+configuration. The threshold remains provisional and corpus-specific; it
+must be re-tuned when the labeled evaluation set or embedding configuration
+changes.
+
+The earlier Stage 13 `0.66` calibration remains historical evidence from the
+previous embedding/evaluation configuration and is not the current
+production threshold.
+
+Evaluation runs against persisted vectors and does not call OpenAI or
+persist evaluation tables.

@@ -395,3 +395,16 @@ The earlier Stage 13 calibration selected a semantic similarity threshold of `0.
 After the embedding configuration was changed to Gemini Embedding 2 and the current 10-post labeled evaluation set was rerun, the threshold sweep was repeated. The current provisional threshold is `0.50`, which produced the strongest observed guarded result on the current corpus: 8/10 correct, 0 accepted incorrect matches, and 2 explicit `NO_CONFIDENT_MATCH` results.
 
 The `0.50` threshold is empirical for the current corpus and embedding configuration. It must be re-tuned if the labeled evaluation set or embedding configuration changes.
+## 2026-09-10 --- Stage 5 guard compatibility correction
+
+- Updated deterministic subject compatibility from normalized exact
+  string equality to token-based compatibility.
+- This preserves deterministic mismatch protection while allowing a
+  concise expected subject such as `mountain` to match richer validated
+  metadata such as `forested mountain range`.
+- Added regression coverage for the mountain case and for unrelated
+  subjects such as `red fox` versus `gray wolf`.
+- Re-ran retrieval evaluation: guarded correctness improved from 8/10
+  to 9/10 with zero incorrectly accepted matches.
+- The current Gemini Embedding 2 evaluation retains the provisional
+  semantic similarity threshold of `0.50`.

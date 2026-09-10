@@ -33,6 +33,16 @@ function normalizeLabel(value: string | null): string {
   return value?.trim().toLowerCase() ?? "";
 }
 
+function areSubjectsCompatible(
+  expectedSubject: string,
+  candidateSubject: string,
+): boolean {
+  const expectedTokens = new Set(normalizeLabel(expectedSubject).split(/\s+/));
+  const candidateTokens = new Set(normalizeLabel(candidateSubject).split(/\s+/));
+
+  return [...expectedTokens].some((token) => candidateTokens.has(token));
+}
+
 export function evaluateMismatchGuard(input: MismatchGuardInput): MismatchGuardResult {
   if (input.semanticSimilarity === null) {
     return {
@@ -64,7 +74,7 @@ export function evaluateMismatchGuard(input: MismatchGuardInput): MismatchGuardR
     };
   }
 
-  if (normalizeLabel(input.expectedSubject) !== normalizeLabel(input.candidateSubject)) {
+  if (!areSubjectsCompatible(input.expectedSubject!, input.candidateSubject!)) {
     return {
       decision: "REJECT",
       reasonCode: "SUBJECT_MISMATCH",
