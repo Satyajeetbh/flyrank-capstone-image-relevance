@@ -634,3 +634,25 @@ README, BUILDLOG, and EVIDENCE were updated to distinguish historical
 OpenAI stages from the current configurable provider path and to
 document the submission-safe local-vision/Gemini-embedding
 configuration.
+
+
+## Current evaluation — Gemini Embedding 2
+
+The current labeled evaluation was rerun using the Gemini Embedding 2 image-metadata and post embeddings with the deterministic guard threshold set to `0.50`.
+
+Results across 10 labeled posts:
+
+- Baseline correct: **8/10**
+- Baseline incorrect: **2/10**
+- Guarded correct: **8/10**
+- Guarded incorrect: **2/10**
+- Explicit `NO_CONFIDENT_MATCH`: **2**
+- Accepted incorrect matches: **0**
+- Expected candidates retrieved but rejected by the guard: **2**
+- Guarded top-1 precision on accepted matches: **100%**
+
+The two posts without a confident match were the mountain and laptop cases. The mountain candidate was rejected because of a subject mismatch; the laptop candidate was rejected because its semantic similarity was below the threshold.
+
+A threshold sweep on the current 10-post labeled set showed that `0.50` produced the strongest observed result. The threshold remains provisional and corpus-specific; it must be re-tuned when the labeled evaluation set or embedding configuration changes.
+
+The earlier Stage 13 `0.66` calibration remains historical evidence from the previous embedding/evaluation configuration and is superseded by this current Gemini Embedding 2 calibration.

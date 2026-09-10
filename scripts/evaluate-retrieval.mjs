@@ -3,17 +3,17 @@ import { randomUUID } from "node:crypto";
 
 const labelsUrl = new URL("../data/evaluation/labeled-posts.json", import.meta.url);
 const calibrationThresholds = [
-  0.660,
-  0.661,
-  0.662,
-  0.663,
-  0.664,
-  0.665,
-  0.666,
-  0.667,
-  0.668,
-  0.669,
-  0.670,
+  0.50,
+  0.52,
+  0.54,
+  0.56,
+  0.58,
+  0.60,
+  0.62,
+  0.64,
+  0.66,
+  0.68,
+  0.70,
 ];
 const isCalibrationRun = process.argv.includes("--calibrate");
 
@@ -46,8 +46,17 @@ try {
   const diagnostics = [];
 
   for (const labeledPost of labeledPosts) {
-    const baseline = await service.retrieve(labeledPost.postId);
-    const guarded = await service.match(labeledPost.postId);
+    const baseline = await service.retrieve(
+      labeledPost.postId,
+      50,
+      "corpus/",
+    );
+    
+    const guarded = await service.match(
+      labeledPost.postId,
+      50,
+      "corpus/",
+    );
     const guardedCandidates = [
       ...(guarded.recommendation ? [guarded.recommendation] : []),
       ...guarded.alternatives,
@@ -102,7 +111,11 @@ try {
           throw new Error("Evaluation fixture is missing a labeled post.");
         }
 
-        const retrieval = await service.retrieve(post.id);
+        const retrieval = await service.retrieve(
+          post.id,
+          50,
+          "corpus/",
+        );
         const evaluatedCandidates = retrieval.candidates.map((candidate) => {
           const guardSimilarity = candidate.similarity < threshold
             ? candidate.similarity
@@ -169,9 +182,10 @@ try {
     console.log("Retrieval evaluation summary");
     console.log(JSON.stringify(metrics, null, 2));
   }
-} catch {
+} catch (error){
   failed = true;
   console.error("Retrieval evaluation failed.");
+  console.error(error);
 } finally {
   if (closeDatabasePool) {
     try {

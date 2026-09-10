@@ -114,6 +114,7 @@ export class ImageEmbeddingRepository {
     queryEmbedding: number[],
     embeddingModel: string,
     limit: number,
+    storageReferencePrefix?: string,
   ): Promise<SemanticImageCandidate[]> {
     if (!Number.isInteger(limit) || limit < 1) {
       throw new Error("Similarity search limit must be a positive integer.");
@@ -132,10 +133,19 @@ export class ImageEmbeddingRepository {
         INNER JOIN image_metadata ON image_metadata.image_id = images.id
         WHERE image_embeddings.embedding_model = $2
           AND images.processing_status = 'completed'
+          AND (
+            $4::text IS NULL
+            OR images.storage_reference LIKE $4::text || '%'
+          )
         ORDER BY image_embeddings.embedding <=> $1::vector ASC
         LIMIT $3
       `,
-      [serializeEmbeddingVector(queryEmbedding), embeddingModel, limit],
+      [
+        serializeEmbeddingVector(queryEmbedding),
+        embeddingModel,
+        limit,
+        storageReferencePrefix ?? null,
+      ],
     );
 
     return result.rows.map(mapSimilarImageRow);

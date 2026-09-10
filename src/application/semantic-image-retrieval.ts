@@ -56,6 +56,7 @@ export class SemanticImageRetrievalService {
   public async retrieve(
     postId: string,
     limit = DEFAULT_SEMANTIC_RETRIEVAL_LIMIT,
+    storageReferencePrefix?: string,
   ): Promise<SemanticImageRetrievalResult> {
     const post = await this.posts.findById(postId);
     if (!post) {
@@ -78,6 +79,7 @@ export class SemanticImageRetrievalService {
         postEmbedding.embedding,
         embeddingModel,
         limit,
+        storageReferencePrefix,
       ),
     };
   }
@@ -85,13 +87,18 @@ export class SemanticImageRetrievalService {
   public async match(
     postId: string,
     limit = DEFAULT_SEMANTIC_RETRIEVAL_LIMIT,
+    storageReferencePrefix?: string,
   ): Promise<MatchingResult> {
     const post = await this.posts.findById(postId);
     if (!post) {
       throw new SemanticRetrievalError("Post was not found.", "post_not_found");
     }
 
-    const retrieved = await this.retrieve(post.id, limit);
+    const retrieved = await this.retrieve(
+      post.id,
+      limit,
+      storageReferencePrefix,
+    );
     const evaluatedCandidates: MatchingCandidateResult[] = [];
 
     for (const candidate of retrieved.candidates) {

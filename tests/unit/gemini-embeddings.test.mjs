@@ -78,4 +78,3 @@ test("classifies missing Gemini API configuration as a provider failure", () => 
     }
   }
 });
-

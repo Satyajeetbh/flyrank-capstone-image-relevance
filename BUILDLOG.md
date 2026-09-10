@@ -388,3 +388,10 @@ provider billing limit.
 -   `npm run typecheck` passed and the full unit suite passed after the
     provider cleanup.
 -   No database schema or migration changes were made.
+
+## 2026-09-10 --- Current evaluation calibration update
+The earlier Stage 13 calibration selected a semantic similarity threshold of `0.66` using the evaluation configuration available at that time. That result is retained as historical build evidence.
+
+After the embedding configuration was changed to Gemini Embedding 2 and the current 10-post labeled evaluation set was rerun, the threshold sweep was repeated. The current provisional threshold is `0.50`, which produced the strongest observed guarded result on the current corpus: 8/10 correct, 0 accepted incorrect matches, and 2 explicit `NO_CONFIDENT_MATCH` results.
+
+The `0.50` threshold is empirical for the current corpus and embedding configuration. It must be re-tuned if the labeled evaluation set or embedding configuration changes.

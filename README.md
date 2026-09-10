@@ -271,13 +271,13 @@ The evaluator reports baseline top-1 accuracy from the
 highest-similarity candidate and guarded top-1 accuracy from the
 existing matching workflow. It also reports no-confident-match count,
 accepted incorrect matches, and expected images retrieved but rejected
-by the guard. The experiment-only calibration mode reports threshold
+by the guard.  The experiment-only calibration mode reports threshold
 sweeps without changing production configuration. Calibration evidence
 showed `0.660` and `0.661` at 10/10 guarded correctness with zero
 incorrect accepted matches, while `0.662` dropped to 9/10. The rounded
 `0.66` threshold was selected as the highest practical rounded threshold
 supported by the current 10-post corpus; it is not universally optimal.
-Evaluation does not call OpenAI or persist evaluation tables.
+Evaluation does not call OpenAI or persist evaluation tables.The current deterministic guard uses a provisional semantic similarity threshold of 0.50 and a vision-confidence threshold of 0.70. The 0.50 similarity threshold was selected from the current 10-post labeled evaluation set because it produced the strongest observed guarded result on this corpus. It is corpus-specific and should be re-tuned when the labeled evaluation set or embedding configuration changes.
 
 ## Stage 14 AI usage and cost tracking
 

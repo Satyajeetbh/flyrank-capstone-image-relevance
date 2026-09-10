@@ -74,7 +74,38 @@ export class PostRepository {
     const row = result.rows[0];
     return row ? mapPostRow(row) : null;
   }
-
+  public async update(
+    id: string,
+    input: CreatePostInput,
+  ): Promise<PostRecord> {
+    const result = await this.database.query<PostRow>(
+      `
+        UPDATE posts
+        SET
+          title = $1,
+          content = $2,
+          expected_subject = $3,
+          expected_category = $4,
+          updated_at = NOW()
+        WHERE id = $5
+        RETURNING id, title, content, expected_subject, expected_category, created_at, updated_at
+      `,
+      [
+        input.title,
+        input.content,
+        input.expectedSubject,
+        input.expectedCategory,
+        id,
+      ],
+    );
+  
+    const row = result.rows[0];
+    if (!row) {
+      throw new Error(`Post not found: ${id}`);
+    }
+  
+    return mapPostRow(row);
+  }
   public async list(): Promise<PostRecord[]> {
     const result = await this.database.query<PostRow>(
       `
