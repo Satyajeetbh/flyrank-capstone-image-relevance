@@ -14,4 +14,32 @@ persistence:
     - vector
   embedding_model: gemini-embedding-2
   embedding_dimension: 1536
+
+run:
+  infrastructure: docker compose up -d postgres redis
+  api: npm start
+  worker: npm run worker:image-processing
+
+seed:
+  corpus: node --env-file=.env scripts/process-image-corpus.mjs
+
+test:
+  unit: npm run test:unit
+  integration: npm run test:integration
+  evaluation: npm run test:evaluation
+
+base_url: http://localhost:3000
+
+endpoints:
+  image_ingestion: POST /images
+  post_images: GET /posts/:id/images
+  suggestion: GET /suggestions/:id
+  approve_suggestion: POST /suggestions/:id/approve
+  reject_suggestion: POST /suggestions/:id/reject
+
+evaluation:
+  labeled_data: data/evaluation/labeled-posts.json
+  retrieval: npm run evaluate:retrieval
+  calibration: npm run evaluate:retrieval:calibrate
+
 scope: stage-18-complete-engine
