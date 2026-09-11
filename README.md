@@ -247,7 +247,7 @@ The command builds the TypeScript source, executes `SELECT 1` through
 the shared pool, and closes the pool. It exits non-zero if configuration
 is missing or PostgreSQL is unreachable.
 
-## Stage 5 guard policy
+## Guard policy
 
 The deterministic mismatch guard uses a provisional semantic similarity
 threshold of `0.50` and a vision-confidence threshold of `0.70`. The
@@ -277,7 +277,7 @@ The verification creates unique image and post rows, retrieves and lists
 them, updates the image processing status, and removes the inserted rows
 afterward.
 
-## Stage 5 unit tests
+## Unit tests
 
 ``` bash
 npm run test:unit
@@ -287,7 +287,7 @@ The unit tests execute the compiled deterministic guard and OpenAI
 provider parsing boundary with Node's built-in test runner. They do not
 call the real OpenAI API.
 
-## Stage 6 OpenAI vision provider
+## OpenAI vision provider
 
 The provider accepts an image URL and requests structured
 image-understanding output from the configured OpenAI vision-capable
@@ -304,7 +304,7 @@ The selected model is `gpt-4.1-mini`, defined in
 `src/providers/openai-vision.ts` so it can be changed in a later stage
 without introducing model-selection infrastructure.
 
-## Stage 7 OpenAI embedding provider
+## OpenAI embedding provider
 
 The original embedding provider uses the fixed `text-embedding-3-small`
 model and validates exactly 1536 finite numeric values. It accepts image
@@ -336,7 +336,7 @@ malformed or incorrectly sized embedding responses are classified
 separately as invalid provider output. No real API call is required by
 the unit tests.
 
-## Stage 8 embedding persistence
+## Embedding persistence
 
 `ImageEmbeddingRepository` and `PostEmbeddingRepository` save and
 retrieve `number[]` vectors through the existing `image_embeddings` and
@@ -355,7 +355,7 @@ database variables set:
 npm run verify:embeddings
 ```
 
-## Stage 13 retrieval evaluation
+## Retrieval evaluation
 
 The evaluation dataset is stored in `data/evaluation/labeled-posts.json`
 and contains 10 labeled post/image pairs.
@@ -397,7 +397,7 @@ Run threshold calibration with:
 npm run evaluate:retrieval:calibrate
 ```
 
-## Stage 14 AI usage and cost tracking
+## AI usage and cost tracking
 
 The AI usage layer maps provider usage into the existing `ai_usage`
 table for provider calls made by application workflows. OpenAI vision
@@ -412,7 +412,7 @@ The application also checks the accumulated estimated cost before vision
 and embedding calls against `AI_USAGE_BUDGET_USD`. This is a development
 safety ceiling, not an exact provider billing limit.
 
-## Stage 15 asynchronous image processing
+## Asynchronous image processing
 
 Image processing is executed asynchronously through Redis and BullMQ
 rather than inside the HTTP request path.
@@ -435,7 +435,7 @@ Image embedding
 PostgreSQL persistence
 ```
 
-## Stage 16 image processing and ingestion
+## Image processing and ingestion
 
 The image-processing workflow connects the existing vision, embedding,
 persistence, and asynchronous job components.
@@ -462,7 +462,7 @@ Configured vision provider → metadata → configured embedding provider
 PostgreSQL persistence
 ```
 
-## Stage 17 hardening and failure behavior
+## Hardening and failure behavior
 
 The image-processing and matching workflows include deterministic
 failure handling for the main failure cases identified in the project
