@@ -35,10 +35,17 @@ try {
     );
   }
 
-  const child = spawn(process.execPath, ["--test", "--test-concurrency=1", ...integrationTests], {
-    env: process.env,
-    stdio: "inherit",
-  });
+  const child = spawn(
+    process.execPath,
+    ["--test", "--test-concurrency=1", ...integrationTests],
+    {
+      env: {
+        ...process.env,
+        IMAGE_PROCESSING_QUEUE_NAME: "image-processing-test",
+      },
+      stdio: "inherit",
+    },
+  );
   const childExitCode = await new Promise((resolve, reject) => {
     child.once("error", reject);
     child.once("close", (code) => resolve(code ?? 1));

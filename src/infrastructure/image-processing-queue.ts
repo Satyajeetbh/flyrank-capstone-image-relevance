@@ -2,7 +2,8 @@ import { Queue } from "bullmq";
 
 import { redisConnection } from "./redis.js";
 
-export const IMAGE_PROCESSING_QUEUE_NAME = "image-processing";
+export const IMAGE_PROCESSING_QUEUE_NAME =
+  process.env.IMAGE_PROCESSING_QUEUE_NAME?.trim() || "image-processing";
 
 export interface ImageProcessingJobData {
   jobId: string;

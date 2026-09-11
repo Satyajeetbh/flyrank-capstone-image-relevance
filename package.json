@@ -15,7 +15,7 @@
     "verify:redis": "npm run build && node --env-file=.env scripts/verify-redis.mjs",
     "test:integration:queue": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/image-processing-queue.test.mjs",
     "test:integration:image-processing-jobs": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/image-processing-jobs.test.mjs",
-    "test:integration:image-processing-worker": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/image-processing-worker.test.mjs",
+    "test:integration:image-processing-worker": "npm run build && node --env-file=.env scripts/run-integration-test.mjs tests/integration/image-processing-worker.test.mjs",
     "verify:repositories": "npm run build && node --env-file=.env scripts/verify-repositories.mjs",
     "test:integration": "npm run build && node --env-file=.env scripts/run-isolated-integration.mjs",
     "test:integration:usage": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/ai-usage.test.mjs",
@@ -28,7 +28,7 @@
     "test:unit": "npm run build && node --test tests/unit/mismatch-guard.test.mjs tests/unit/openai-vision.test.mjs tests/unit/openai-embeddings.test.mjs tests/unit/gemini-embeddings.test.mjs tests/unit/ai-usage.test.mjs tests/unit/ai-budget.test.mjs",
     "test:unit:job-errors": "npm run build && node --test tests/unit/job-errors.test.mjs",
     "worker:image-processing": "npm run build && node --env-file=.env dist/workers/start-image-processing-worker.js",
-    "test:integration:image-processing-retry": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/image-processing-retry.test.mjs",
+    "test:integration:image-processing-retry": "npm run build && node --env-file=.env scripts/run-integration-test.mjs tests/integration/image-processing-retry.test.mjs",
     "test:integration:image-ingestion": "npm run build && node --env-file=.env --test --test-concurrency=1 tests/integration/image-ingestion.test.mjs"
   },
   "keywords": [
