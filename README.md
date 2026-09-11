@@ -1,3 +1,109 @@
+## 👋 Hello!
+
+Thanks for taking the time to check out this project.
+
+I’ve added a quick-start guide below to make it a little easier to get the project running, test the main functionality, and see the evaluation results without having to dig through the repository first.
+
+The project is designed to be reproducible with the default configuration, while also keeping the real OpenAI provider implementations available for anyone who wants to try them.
+
+### Reviewer quick start
+
+If you want to evaluate the project quickly, here’s the shortest path.
+
+### 1. Start infrastructure
+
+```bash
+docker compose up -d postgres redis
+```
+
+### 2. Apply database migrations
+
+```bash
+docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/001_enable_extensions.sql
+docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/002_create_core_tables.sql
+docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/003_create_indexes.sql
+```
+
+### 3. Install dependencies and build
+
+```bash
+npm ci
+npm run build
+```
+
+### 4. Configure the environment
+
+Copy `.env.example` to `.env`.
+
+The default submission configuration is:
+
+```env
+VISION_PROVIDER=local
+EMBEDDING_PROVIDER=gemini
+AI_USAGE_BUDGET_USD=1
+```
+
+The local vision provider uses the checked-in, Zod-validated corpus metadata fixtures. This keeps the default evaluation path reproducible and avoids requiring an OpenAI API key just to run the project.
+
+OpenAI vision and OpenAI embeddings are also implemented as optional providers and can be selected through `.env`.
+
+### 5. Run the tests
+
+```bash
+npm run typecheck
+npm run test:unit
+npm run test:integration
+```
+
+### 6. Run the retrieval evaluation
+
+```bash
+npm run evaluate:retrieval
+```
+
+To run the threshold calibration experiment:
+
+```bash
+npm run evaluate:retrieval:calibrate
+```
+
+### 7. Where to look
+
+If you’d like to see how the core system works, these are the best places to start:
+
+* `src/domain/mismatch-guard.ts` — deterministic image/post mismatch guard
+* `src/domain/guard-policy.ts` — centralized guard thresholds
+* `src/application/semantic-image-retrieval.ts` — semantic retrieval and matching workflow
+* `src/application/image-processing.ts` — image understanding and embedding workflow
+* `src/providers/openai-vision.ts` — OpenAI vision provider
+* `src/providers/openai-embeddings.ts` — OpenAI embedding provider
+* `src/providers/gemini-embeddings.ts` — Gemini embedding provider
+* `src/workers/image-processing-worker.ts` — asynchronous image processing
+* `data/evaluation/labeled-posts.json` — labeled evaluation set
+* `scripts/evaluate-retrieval.mjs` — retrieval evaluation runner
+* `EVIDENCE.md` — verification and evaluation evidence
+* `BUILDLOG.md` — implementation history
+
+The main engineering flow is:
+
+```text
+Image
+  ↓
+Vision / structured metadata
+  ↓
+Embedding
+  ↓
+Vector retrieval
+  ↓
+Deterministic mismatch guard
+  ↓
+Recommendation / Review / NO_CONFIDENT_MATCH
+```
+
+I hope this makes testing and exploring the project a little easier. Thanks again for taking the time to look through it.
+
+
+
 # FlyRank AI Image Understanding & Content Matching Engine
 
 This repository contains the TypeScript foundation, PostgreSQL
