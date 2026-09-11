@@ -512,6 +512,32 @@ Budget behavior is covered by unit tests for:
 
 The default development budget is `$1`. This is a safety ceiling based on estimated provider usage and is not an exact provider billing limit.
 
+## Current evaluation results and threshold clarification
+
+The Stage 13 evaluation results above are historical results from the earlier OpenAI embedding configuration. They are retained because they document the original calibration experiment and the subsequent provider change.
+
+The current submission configuration uses `gemini-embedding-2` with 1536-dimensional embeddings, so the retrieval evaluation and guard threshold were re-run against the current persisted vectors.
+
+The current calibrated threshold is `0.50`. On the current 10-post labeled evaluation set, the results are:
+
+```json
+{
+  "totalEvaluatedPosts": 10,
+  "baselineCorrect": 8,
+  "baselineIncorrect": 2,
+  "guardedCorrect": 9,
+  "guardedIncorrect": 1,
+  "noConfidentMatchCount": 1,
+  "acceptedIncorrectMatches": 0,
+  "expectedRetrievedButRejectedCount": 1
+}
+```
+
+The current calibration experiment tested semantic similarity thresholds from `0.50` through `0.70`. The `0.50` threshold produced the best result among the tested thresholds for the current Gemini embedding configuration: 9/10 guarded-correct results with zero incorrectly accepted matches. Higher thresholds did not improve guarded correctness or precision and rejected more expected images.
+
+This threshold is empirical for the current 10-post labeled set and should not be treated as universally optimal. It is intended to be re-tuned if the embedding provider/model or evaluation dataset changes.
+
+
 ## Stage 18.3 Gemini Embedding 2 and provider-selection verification
 
 The current submission-safe provider configuration is:
