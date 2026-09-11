@@ -14,4 +14,4 @@ persistence:
     - vector
   embedding_model: gemini-embedding-2
   embedding_dimension: 1536
-scope: stage-5-image-understanding-and-matching
+scope: stage-18-complete-engine

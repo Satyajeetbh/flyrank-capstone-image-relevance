@@ -445,11 +445,8 @@ npm run build
 npm run test:integration:image-processing-jobs
 npm run test:integration:image-processing-worker
 npm run test:integration:image-processing-retry
+```
 
-
-## Stage 16
-
-```md
 ## Stage 16 image processing and ingestion verification
 
 The following verification was completed:
@@ -500,6 +497,7 @@ npm run test:integration:image-processing-jobs
 npm run test:integration:image-processing-worker
 npm run test:integration:image-processing-retry
 git diff --check
+```
 
 ### AI budget guard
 

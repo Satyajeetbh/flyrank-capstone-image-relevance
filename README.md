@@ -89,10 +89,10 @@ monetary cost is `$0`.
 The Compose file uses the same database variables with local defaults.
 `.env` is ignored by Git. Never commit API keys.
 
-## Start PostgreSQL
+## Start PostgreSQL and Redis
 
 ``` bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 ```
 
 The service uses the `pgvector/pgvector:pg16` image and a persistent
