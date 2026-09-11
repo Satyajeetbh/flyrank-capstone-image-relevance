@@ -1,18 +1,17 @@
 import { z } from "zod";
-
 import type { MatchingDecision } from "../domain/matching-result.js";
 import type { GuardDecision } from "../domain/mismatch-guard.js";
 
 const labeledPostSchema = z.object({
   postId: z.string().uuid(),
-  expectedImageId: z.string().uuid(),
+  expectedCorpusImageId: z.string().trim().min(1),
 });
 
 const labeledPostsSchema = z.array(labeledPostSchema).min(1);
 
 export interface LabeledPost {
   postId: string;
-  expectedImageId: string;
+  expectedCorpusImageId: string;
 }
 
 export function parseLabeledPosts(input: unknown): LabeledPost[] {
@@ -48,6 +47,7 @@ export function calculateRetrievalMetrics(
   const baselineCorrect = records.filter(
     (record) => record.baselineImageId === record.expectedImageId,
   ).length;
+
   const guardedCorrect = records.filter(
     (record) => record.guardedImageId === record.expectedImageId,
   ).length;
@@ -60,6 +60,7 @@ export function calculateRetrievalMetrics(
     const expectedCandidate = record.guardedCandidates.find(
       (candidate) => candidate.imageId === record.expectedImageId,
     );
+
     return expectedCandidate?.guardDecision !== "ACCEPT";
   }).length;
 

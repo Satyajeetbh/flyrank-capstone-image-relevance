@@ -12,7 +12,6 @@ persistence:
   database: postgresql
   extensions:
     - vector
-  embedding_model: text-embedding-3-small
+  embedding_model: gemini-embedding-2
   embedding_dimension: 1536
-
-scope: stage-2-persistence
+scope: stage-5-image-understanding-and-matching

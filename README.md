@@ -31,7 +31,9 @@ asynchronously.
 
 The project still does not include a frontend, authentication, ANN
 vector indexing, distributed infrastructure, or a generic service/DI
-framework.## Requirements
+framework.
+
+## Requirements
 
 -   Node.js 20 or newer
 -   npm
@@ -100,7 +102,7 @@ named volume named `postgres_data`.
 
 Migrations are plain SQL and are intentionally kept dependency-free.
 Apply them in filename order from the repository root after PostgreSQL
-is healthy:
+is healthy.
 
 The commands below use the documented local defaults. If you override
 the database name or user, replace `flyrank` in the commands
@@ -141,12 +143,14 @@ is missing or PostgreSQL is unreachable.
 
 ## Stage 5 guard policy
 
-The deterministic mismatch guard originally used provisional thresholds
-of `0.75` for semantic similarity and `0.70` for vision confidence.
-After calibration against the current real-embedding evaluation corpus,
-the production semantic similarity threshold is now `0.66`; the
-vision-confidence threshold remains `0.70`. Both values are centralized
-in `src/domain/guard-policy.ts`.
+The deterministic mismatch guard uses a provisional semantic similarity
+threshold of `0.50` and a vision-confidence threshold of `0.70`. The
+semantic similarity threshold was selected from the current 10-post
+labeled evaluation set: `0.50` produced 8/10 baseline accuracy, 9/10 guarded correctness with
+zero incorrectly accepted matches and one `NO_CONFIDENT_MATCH`. These
+thresholds are corpus- and embedding-configuration-specific and should
+be re-tuned when the labeled evaluation set or embedding configuration
+changes. Both values are centralized in `src/domain/guard-policy.ts`.
 
 The guard returns `REVIEW` with `MISSING_METADATA` when required
 subject, category, or vision-confidence data is absent. A candidate
@@ -248,28 +252,44 @@ npm run verify:embeddings
 ## Stage 13 retrieval evaluation
 
 The evaluation dataset is stored in `data/evaluation/labeled-posts.json`
-and contains 10 labeled post/image pairs. The historical evaluation
-generator uses the OpenAI embedding provider:
+and contains 10 labeled post/image pairs.
+
+### Evaluation corpus
+
+The labeled evaluation set is defined in
+`data/evaluation/labeled-posts.json`. Each entry references a stable
+corpus image ID, and the evaluation script resolves that ID to the
+current database image record through its `storageReference`.
+
+Run the current retrieval evaluation with:
 
 ``` bash
-docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U flyrank -d flyrank < data/evaluation/seed-evaluation.sql
-OPENAI_API_KEY=<key> POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run generate:evaluation
+npm run evaluate:retrieval
 ```
 
-That generator is retained as the historical evaluation-corpus
-generation path. The current runtime supports both OpenAI and Gemini
-embeddings through `EMBEDDING_PROVIDER`; existing persisted evaluation
-fixture vectors remain usable regardless of the provider used for later
-image processing. After vectors are persisted, evaluation itself is
-offline:
+The evaluator reports baseline top-1 accuracy from the
+highest-similarity candidate and guarded top-1 accuracy from the
+existing matching workflow. It also reports no-confident-match count,
+accepted incorrect matches, and expected images retrieved but rejected
+by the guard. The experiment-only calibration mode reports threshold
+sweeps without changing production configuration.
+
+The current deterministic guard uses a provisional semantic similarity
+threshold of `0.50` and a vision-confidence threshold of `0.70`. With
+the current Gemini Embedding 2 configuration and 10-post labeled
+evaluation set, the `0.50` threshold produced 9/10 guarded correctness,
+zero incorrectly accepted matches, and one `NO_CONFIDENT_MATCH`. The
+threshold is corpus- and embedding-configuration-specific and should be
+re-tuned when the labeled evaluation set or embedding configuration
+changes.
+
+Evaluation does not call OpenAI or persist evaluation tables.
+
+Run threshold calibration with:
 
 ``` bash
-POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run evaluate:retrieval
+npm run evaluate:retrieval:calibrate
 ```
-
-The evaluator reports baseline top-1 accuracy from the highest-similarity candidate and guarded top-1 accuracy from the existing matching workflow. It also reports no-confident-match count, accepted incorrect matches, and expected images retrieved but rejected by the guard. The experiment-only calibration mode reports threshold sweeps without changing production configuration. Historical calibration evidence from the earlier OpenAI embedding configuration showed `0.660` and `0.661` at 10/10 guarded correctness with zero incorrectly accepted matches, while `0.662` dropped to 9/10. That historical `0.66` threshold is not the current production configuration.
-
-The current deterministic guard uses a provisional semantic similarity threshold of `0.50` and a vision-confidence threshold of `0.70`. With the current Gemini Embedding 2 configuration and 10-post labeled evaluation set, the `0.50` threshold produced the strongest observed current guarded result: 9/10 guarded correctness, with zero incorrectly accepted matches and one `NO_CONFIDENT_MATCH`. The threshold is corpus- and embedding-configuration-specific and should be re-tuned when the labeled evaluation set or embedding configuration changes. Evaluation does not call OpenAI or persist evaluation tables.
 
 ## Stage 14 AI usage and cost tracking
 
@@ -307,14 +327,16 @@ Validated image metadata
 Image embedding
        ↓
 PostgreSQL persistence
+```
 
 ## Stage 16 image processing and ingestion
 
-The image-processing workflow now connects the existing vision, embedding, persistence, and asynchronous job components.
+The image-processing workflow connects the existing vision, embedding,
+persistence, and asynchronous job components.
 
 Image processing flow:
 
-```text
+``` text
 POST /images
    ↓
 Validate request with Zod
@@ -332,17 +354,20 @@ Worker processes image asynchronously
 Configured vision provider → metadata → configured embedding provider
    ↓
 PostgreSQL persistence
+```
 
-```md
 ## Stage 17 hardening and failure behavior
 
-The image-processing and matching workflows include deterministic failure handling for the main failure cases identified in the project brief.
+The image-processing and matching workflows include deterministic
+failure handling for the main failure cases identified in the project
+brief.
 
 ### AI/provider failures
 
-Vision provider failures are classified separately from invalid model output:
+Vision provider failures are classified separately from invalid model
+output:
 
-```text
+``` text
 Provider/API failure
         ↓
 provider_api_failure
@@ -350,10 +375,14 @@ provider_api_failure
 Retryable worker failure
         ↓
 BullMQ retry
+```
 
-## TypeScript verification
+Invalid structured model output is classified separately and is not
+treated as successful metadata.
 
-```bash
+### TypeScript verification
+
+``` bash
 npm run typecheck
 npm run build
 ```
@@ -370,31 +399,33 @@ vision or embedding calls. Configure it with:
 
 ``` env
 AI_USAGE_BUDGET_USD=1
+```
 
+### Final verification
 
-### Then verify
-
-```powershell
+``` powershell
 npm run typecheck
 npm run build
 npm run test:unit
 npm run test:integration
 git diff --check
+```
 
 ## AI provider configuration
 
-The provider boundaries are intentionally swappable without changing the application service or persistence layer.
+The provider boundaries are intentionally swappable without changing the
+application service or persistence layer.
 
-| Capability | Option | Current configuration |
-| --- | --- | --- |
-| Vision | `local` | `local` |
-| Vision | `openai` | optional |
-| Embeddings | `gemini` | `gemini` |
-| Embeddings | `openai` | optional |
+  Capability   Option     Current configuration
+  ------------ ---------- -----------------------
+  Vision       `local`    `local`
+  Vision       `openai`   optional
+  Embeddings   `gemini`   `gemini`
+  Embeddings   `openai`   optional
 
 For the capstone's submission-safe path, use:
 
-```env
+``` env
 VISION_PROVIDER=local
 EMBEDDING_PROVIDER=gemini
 AI_USAGE_BUDGET_USD=1

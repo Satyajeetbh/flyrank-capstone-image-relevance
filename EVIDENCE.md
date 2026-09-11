@@ -352,36 +352,22 @@ Result:
 1 evaluation test passed, 0 failed.
 ```
 
-The evaluation corpus entity seed was executed successfully. The fixed
-fixture already had persisted 1536-dimensional vectors when this
-correction was run; the generation command was also attempted but could
-not call OpenAI because `OPENAI_API_KEY` is not configured in this
-environment. No synthetic vector construction remains in the seed SQL.
+The evaluation corpus entity seed used during the earlier evaluation
+implementation has since been retired. The current evaluation corpus is
+defined by `data/evaluation/labeled-posts.json` and resolves expected
+images through their stable corpus IDs.
 
-For a fresh corpus, run:
+The earlier evaluation-corpus generation command was also attempted during
+the historical implementation, but could not call OpenAI because
+`OPENAI_API_KEY` was not configured in that environment. This historical
+failure is retained as evidence; it is not part of the current evaluation
+workflow.
 
-``` bash
-docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U flyrank -d flyrank < data/evaluation/seed-evaluation.sql
-OPENAI_API_KEY=<key> POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run generate:evaluation
-```
+Current retrieval evaluation runs only against persisted vectors and makes
+no OpenAI calls:
 
-Corpus generation calls OpenAI and incurs embedding usage. Evaluation
-runs only against persisted vectors and makes no OpenAI calls:
-
-``` bash
+```bash
 POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=flyrank POSTGRES_USER=flyrank POSTGRES_PASSWORD=flyrank_local_password npm run evaluate:retrieval
-```
-
-Observed generation command in this correction:
-
-``` text
-generate:evaluation: failed with "Evaluation corpus generation failed. Verify PostgreSQL and OPENAI_API_KEY configuration."
-```
-
-The integration-isolated test command also passed:
-
-``` text
-4 PostgreSQL integration tests passed, 0 failed.
 ```
 
 The evaluator was first run against the persisted fixture before

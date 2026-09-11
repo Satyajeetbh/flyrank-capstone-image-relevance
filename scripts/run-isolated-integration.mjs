@@ -19,10 +19,12 @@ try {
   const database = await import("../dist/infrastructure/database.js");
   closeDatabasePool = database.closeDatabasePool;
 
-  const evaluationImageIds = labels.map((label) => label.expectedImageId);
+  // const evaluationImageIds = labels.map((label) => label.expectedImageId);
   const result = await database.pool.query(
-    "SELECT id, processing_status FROM images WHERE id = ANY($1::uuid[])",
-    [evaluationImageIds],
+    `
+      SELECT id, processing_status
+      FROM images
+    `,
   );
   originalStatuses = result.rows;
 

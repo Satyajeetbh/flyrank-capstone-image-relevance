@@ -101,7 +101,7 @@ try {
 
       if (job.status === "failed") {
         throw new Error(
-          `Processing failed for ${item.corpusImage.id}: ${job.errorMessage ?? "unknown error"}`
+          `Processing failed for ${item.corpusImage.id}: ${job.error ?? "unknown error"}`
         );
       }
 

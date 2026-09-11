@@ -14,14 +14,14 @@ test("loads the labeled evaluation set and derives retrieval metrics", async () 
   assert.equal(labels.length, 10);
 
   const records = labels.slice(0, 3).map((label, index) => ({
-    expectedImageId: label.expectedImageId,
-    baselineImageId: index === 0 ? "00000000-0000-4000-8000-000000000000" : label.expectedImageId,
-    baselineRetrievedImageIds: [label.expectedImageId],
+    expectedImageId: label.expectedCorpusImageId,
+    baselineImageId: index === 0 ? "00000000-0000-4000-8000-000000000000" : label.expectedCorpusImageId,
+    baselineRetrievedImageIds: [label.expectedCorpusImageId],
     guardedDecision: index === 2 ? "NO_CONFIDENT_MATCH" : "ACCEPT",
-    guardedImageId: index === 0 || index === 2 ? null : label.expectedImageId,
+    guardedImageId: index === 0 || index === 2 ? null : label.expectedCorpusImageId,
     guardedCandidates: [
       {
-        imageId: label.expectedImageId,
+        imageId: label.expectedCorpusImageId,
         guardDecision: index === 2 ? "REJECT" : "ACCEPT",
       },
     ],

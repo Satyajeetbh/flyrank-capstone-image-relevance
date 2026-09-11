@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 
-const labelsUrl = new URL("../data/evaluation/labeled-posts.json", import.meta.url);
+const labelsUrl = new URL(
+  "../data/evaluation/labeled-posts.json",
+  import.meta.url,
+);
+
 const calibrationThresholds = [
   0.50,
   0.52,
@@ -15,6 +19,7 @@ const calibrationThresholds = [
   0.68,
   0.70,
 ];
+
 const isCalibrationRun = process.argv.includes("--calibrate");
 
 let closeDatabasePool;
@@ -22,68 +27,102 @@ let failed = false;
 
 try {
   const labels = JSON.parse(await readFile(labelsUrl, "utf8"));
+
   const evaluation = await import("../dist/application/retrieval-evaluation.js");
-  const { SemanticImageRetrievalService } = await import("../dist/application/semantic-image-retrieval.js");
+  const {
+    SemanticImageRetrievalService,
+  } = await import("../dist/application/semantic-image-retrieval.js");
   const { evaluateMismatchGuard } = await import("../dist/domain/mismatch-guard.js");
   const { GUARD_THRESHOLDS } = await import("../dist/domain/guard-policy.js");
   const { postRepository } = await import("../dist/repositories/posts.js");
+  const { imageRepository } = await import("../dist/repositories/images.js");
   const database = await import("../dist/infrastructure/database.js");
+
   closeDatabasePool = database.closeDatabasePool;
 
   const labeledPosts = evaluation.parseLabeledPosts(labels);
+
   const evaluationSuggestionRepository = {
     async create() {
       return { id: `evaluation-${randomUUID()}` };
     },
   };
+
   const service = new SemanticImageRetrievalService(
     undefined,
     undefined,
     undefined,
     evaluationSuggestionRepository,
   );
+
   const records = [];
   const diagnostics = [];
 
   for (const labeledPost of labeledPosts) {
+    const storageReference = `corpus/${labeledPost.expectedCorpusImageId}`;
+
+    const expectedImage = (await imageRepository.list()).find(
+      (image) => image.storageReference === storageReference,
+    );
+
+    if (!expectedImage) {
+      throw new Error(
+        `Evaluation corpus image not found: ${labeledPost.expectedCorpusImageId} (${storageReference})`,
+      );
+    }
+
+    const expectedImageId = expectedImage.id;
+
     const baseline = await service.retrieve(
       labeledPost.postId,
       50,
       "corpus/",
     );
-    
+
     const guarded = await service.match(
       labeledPost.postId,
       50,
       "corpus/",
     );
+
     const guardedCandidates = [
       ...(guarded.recommendation ? [guarded.recommendation] : []),
       ...guarded.alternatives,
     ];
+
     const baselineTop = baseline.candidates[0] ?? null;
-    const expectedCandidate = guardedCandidates.find(
-      (candidate) => candidate.imageId === labeledPost.expectedImageId,
-    ) ?? null;
+
+    const expectedCandidate =
+      guardedCandidates.find(
+        (candidate) => candidate.imageId === expectedImageId,
+      ) ?? null;
 
     diagnostics.push({
       postId: labeledPost.postId,
-      expectedImageId: labeledPost.expectedImageId,
+      expectedCorpusImageId: labeledPost.expectedCorpusImageId,
+      expectedImageId,
       baselineTop1ImageId: baselineTop?.imageId ?? null,
       baselineTop1Similarity: baselineTop?.similarity ?? null,
       guardedDecision: guarded.decision,
-      guardedRecommendationImageId: guarded.recommendation?.imageId ?? null,
-      guardedRecommendationSimilarity: guarded.recommendation?.similarity ?? null,
+      guardedRecommendationImageId:
+        guarded.recommendation?.imageId ?? null,
+      guardedRecommendationSimilarity:
+        guarded.recommendation?.similarity ?? null,
       expectedImageSimilarity: expectedCandidate?.similarity ?? null,
-      expectedImageGuardDecision: expectedCandidate?.guardDecision ?? null,
-      expectedImageGuardReasonCode: expectedCandidate?.reasonCode ?? null,
-      expectedImageGuardReason: expectedCandidate?.reason ?? null,
+      expectedImageGuardDecision:
+        expectedCandidate?.guardDecision ?? null,
+      expectedImageGuardReasonCode:
+        expectedCandidate?.reasonCode ?? null,
+      expectedImageGuardReason:
+        expectedCandidate?.reason ?? null,
     });
 
     records.push({
-      expectedImageId: labeledPost.expectedImageId,
+      expectedImageId,
       baselineImageId: baseline.candidates[0]?.imageId ?? null,
-      baselineRetrievedImageIds: baseline.candidates.map((candidate) => candidate.imageId),
+      baselineRetrievedImageIds: baseline.candidates.map(
+        (candidate) => candidate.imageId,
+      ),
       guardedDecision: guarded.decision,
       guardedImageId: guarded.recommendation?.imageId ?? null,
       guardedCandidates: guardedCandidates.map((candidate) => ({
@@ -94,6 +133,7 @@ try {
   }
 
   const metrics = evaluation.calculateRetrievalMetrics(records);
+
   if (isCalibrationRun) {
     const calibrationResults = [];
 
@@ -107,8 +147,23 @@ try {
 
       for (const labeledPost of labeledPosts) {
         const post = await postRepository.findById(labeledPost.postId);
+
         if (!post) {
-          throw new Error("Evaluation fixture is missing a labeled post.");
+          throw new Error(
+            `Evaluation fixture is missing labeled post: ${labeledPost.postId}`,
+          );
+        }
+
+        const storageReference = `corpus/${labeledPost.expectedCorpusImageId}`;
+
+        const expectedImage = (await imageRepository.list()).find(
+          (image) => image.storageReference === storageReference,
+        );
+
+        if (!expectedImage) {
+          throw new Error(
+            `Evaluation corpus image not found: ${labeledPost.expectedCorpusImageId} (${storageReference})`,
+          );
         }
 
         const retrieval = await service.retrieve(
@@ -116,10 +171,16 @@ try {
           50,
           "corpus/",
         );
+
         const evaluatedCandidates = retrieval.candidates.map((candidate) => {
-          const guardSimilarity = candidate.similarity < threshold
-            ? candidate.similarity
-            : Math.max(candidate.similarity, GUARD_THRESHOLDS.minimumSemanticSimilarity);
+          const guardSimilarity =
+            candidate.similarity < threshold
+              ? candidate.similarity
+              : Math.max(
+                  candidate.similarity,
+                  GUARD_THRESHOLDS.minimumSemanticSimilarity,
+                );
+
           const guardResult = evaluateMismatchGuard({
             expectedSubject: post.expectedSubject,
             expectedCategory: post.expectedCategory,
@@ -135,17 +196,23 @@ try {
             guardDecision: guardResult.decision,
           };
         });
-        const recommendation = evaluatedCandidates.find(
-          (candidate) => candidate.guardDecision === "ACCEPT",
-        ) ?? null;
-        const expectedCandidate = evaluatedCandidates.find(
-          (candidate) => candidate.imageId === labeledPost.expectedImageId,
-        ) ?? null;
+
+        const recommendation =
+          evaluatedCandidates.find(
+            (candidate) => candidate.guardDecision === "ACCEPT",
+          ) ?? null;
+
+        const expectedCandidate =
+          evaluatedCandidates.find(
+            (candidate) => candidate.imageId === expectedImage.id,
+          ) ?? null;
 
         totalEvaluatedPosts += 1;
+
         if (recommendation) {
           acceptedCount += 1;
-          if (recommendation.imageId === labeledPost.expectedImageId) {
+
+          if (recommendation.imageId === expectedImage.id) {
             correctAcceptedMatches += 1;
           } else {
             incorrectAcceptedMatches += 1;
@@ -153,7 +220,11 @@ try {
         } else {
           noConfidentMatchCount += 1;
         }
-        if (expectedCandidate && expectedCandidate.similarity < threshold) {
+
+        if (
+          expectedCandidate &&
+          expectedCandidate.similarity < threshold
+        ) {
           expectedImagesRejectedBecauseOfSimilarityThreshold += 1;
         }
       }
@@ -165,12 +236,14 @@ try {
         incorrectAcceptedMatches,
         expectedImagesRejectedBecauseOfSimilarityThreshold,
         noConfidentMatchCount,
-        guardedCorrectness: totalEvaluatedPosts === 0
-          ? null
-          : correctAcceptedMatches / totalEvaluatedPosts,
-        guardedPrecision: acceptedCount === 0
-          ? null
-          : correctAcceptedMatches / acceptedCount,
+        guardedCorrectness:
+          totalEvaluatedPosts === 0
+            ? null
+            : correctAcceptedMatches / totalEvaluatedPosts,
+        guardedPrecision:
+          acceptedCount === 0
+            ? null
+            : correctAcceptedMatches / acceptedCount,
       });
     }
 
@@ -179,10 +252,11 @@ try {
   } else {
     console.log("Retrieval evaluation diagnostics");
     console.log(JSON.stringify(diagnostics, null, 2));
+
     console.log("Retrieval evaluation summary");
     console.log(JSON.stringify(metrics, null, 2));
   }
-} catch (error){
+} catch (error) {
   failed = true;
   console.error("Retrieval evaluation failed.");
   console.error(error);

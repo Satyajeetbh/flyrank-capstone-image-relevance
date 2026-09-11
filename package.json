@@ -8,6 +8,7 @@
     "test": "tests"
   },
   "scripts": {
+    "start": "node --env-file=.env dist/index.js",
     "build": "tsc --pretty",
     "typecheck": "tsc --noEmit --pretty",
     "verify:db": "npm run build && node --env-file=.env scripts/verify-database.mjs",
@@ -22,7 +23,6 @@
     "test:integration:raw": "node --env-file=.env --test --test-concurrency=1 tests/integration/embeddings.test.mjs tests/integration/semantic-image-retrieval.test.mjs tests/integration/matching-workflow.test.mjs tests/integration/suggestion-review.test.mjs",
     "verify:embeddings": "npm run test:integration",
     "test:evaluation": "npm run build && node --test tests/evaluation/retrieval-evaluation.test.mjs",
-    "generate:evaluation": "npm run build && node --env-file=.env scripts/generate-evaluation-corpus.mjs",
     "evaluate:retrieval": "npm run build && node --env-file=.env scripts/evaluate-retrieval.mjs",
     "evaluate:retrieval:calibrate": "npm run build && node --env-file=.env scripts/evaluate-retrieval.mjs --calibrate",
     "test:unit": "npm run build && node --test tests/unit/mismatch-guard.test.mjs tests/unit/openai-vision.test.mjs tests/unit/openai-embeddings.test.mjs tests/unit/gemini-embeddings.test.mjs tests/unit/ai-usage.test.mjs tests/unit/ai-budget.test.mjs",
