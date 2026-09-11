@@ -97,7 +97,7 @@ test("selects the highest-ranked candidate accepted by the mismatch guard", asyn
     assert.equal(suggestionsByImage.get(accepted.id).guard_status, "accept");
     assert.equal(suggestionsByImage.get(accepted.id).reason, result.recommendation.reason);
     assert.equal(suggestionsByImage.get(rejectedSubject.id).guard_status, "reject");
-    assert.equal(suggestionsByImage.get(rejectedSubject.id).reason, "The candidate image subject does not match the post subject.");
+    assert.equal(suggestionsByImage.get(rejectedSubject.id).reason, "Animal category mismatch: expected fox, detected wolf.");
     assert.equal(suggestionsByImage.get(review.id).guard_status, "review");
     assert.equal(suggestionsByImage.get(review.id).reason, "Vision confidence is below 0.7.");
     assert.equal(suggestionsByImage.get(lowSimilarity.id).guard_status, "reject");

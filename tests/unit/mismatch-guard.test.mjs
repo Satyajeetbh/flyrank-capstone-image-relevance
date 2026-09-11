@@ -133,4 +133,8 @@ test("rejects unrelated subjects even when they share no semantic label token", 
 
   assert.equal(result.decision, "REJECT");
   assert.equal(result.reasonCode, "SUBJECT_MISMATCH");
+  assert.equal(
+    result.reason,
+    "Animal category mismatch: expected red fox, detected gray wolf.",
+  );
 });

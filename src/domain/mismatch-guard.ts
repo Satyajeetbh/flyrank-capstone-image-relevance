@@ -33,6 +33,16 @@ function normalizeLabel(value: string | null): string {
   return value?.trim().toLowerCase() ?? "";
 }
 
+function formatCategoryPrefix(category: string): string {
+  const trimmed = category.trim();
+  const singular =
+    trimmed.toLowerCase().endsWith("s") && !trimmed.toLowerCase().endsWith("ss")
+      ? trimmed.slice(0, -1)
+      : trimmed;
+
+  return singular.charAt(0).toUpperCase() + singular.slice(1);
+}
+
 function areSubjectsCompatible(
   expectedSubject: string,
   candidateSubject: string,
@@ -75,10 +85,14 @@ export function evaluateMismatchGuard(input: MismatchGuardInput): MismatchGuardR
   }
 
   if (!areSubjectsCompatible(input.expectedSubject!, input.candidateSubject!)) {
+    const categoryPrefix = formatCategoryPrefix(input.expectedCategory!);
+    const expected = input.expectedSubject!.trim();
+    const detected = input.candidateSubject!.trim();
+
     return {
       decision: "REJECT",
       reasonCode: "SUBJECT_MISMATCH",
-      reason: "The candidate image subject does not match the post subject.",
+      reason: `${categoryPrefix} category mismatch: expected ${expected}, detected ${detected}.`,
     };
   }
 
