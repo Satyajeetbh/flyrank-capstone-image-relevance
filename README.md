@@ -8,56 +8,58 @@ The project is designed to be reproducible with the default configuration, while
 
 ### Reviewer quick start
 
-If you want to evaluate the project quickly, here’s the shortest path.
+If you want to evaluate the project quickly, follow this submission path.
 
-### 1. Start infrastructure
+### 1. Configure the environment
 
-```bash
-docker compose up -d postgres redis
-```
-
-### 2. Apply database migrations
+Copy `.env.example` to `.env`:
 
 ```bash
-docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/001_enable_extensions.sql
-docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/002_create_core_tables.sql
-docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/003_create_indexes.sql
+cp .env.example .env
 ```
 
-### 3. Install dependencies and build
-
-```bash
-npm ci
-npm run build
-```
-
-### 4. Configure the environment
-
-Copy `.env.example` to `.env`.
-
-The default submission configuration is:
+The submission configuration requires configuring `.env`:
 
 ```env
 VISION_PROVIDER=local
 EMBEDDING_PROVIDER=gemini
 AI_USAGE_BUDGET_USD=1
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-The local vision provider uses the checked-in, Zod-validated corpus metadata fixtures. This keeps the default evaluation path reproducible and avoids requiring an OpenAI API key just to run the project.
+> [!NOTE]
+> The system requires an environment configuration. `VISION_PROVIDER=local` uses the checked-in, Zod-validated corpus metadata fixtures (avoiding OpenAI vision costs and API dependencies). For embeddings, `EMBEDDING_PROVIDER=gemini` requires a valid `GEMINI_API_KEY`. (Alternatively, set `EMBEDDING_PROVIDER=openai` with `OPENAI_API_KEY`).
 
-OpenAI vision and OpenAI embeddings are also implemented as optional providers and can be selected through `.env`.
+### 2. Boot
 
-### 5. Run the tests
+```bash
+docker compose up -d
+```
+
+This single command boots the complete system:
+* **PostgreSQL 16 with pgvector**: automatically initializes extensions (`vector`, `pgcrypto`), core tables, constraints, and indexes from `migrations/` on first startup.
+* **Redis 7**: queue and job persistence backend for asynchronous background processing.
+* **API service**: Express HTTP application listening on `http://localhost:3000`.
+* **Image-processing worker**: BullMQ worker handling asynchronous vision and embedding processing jobs.
+
+### 3. Seed demo data
+
+```bash
+node --env-file=.env scripts/process-image-corpus.mjs
+```
+
+What this seed step does:
+* Ingests the 50-image corpus defined in `data/corpus/manifest.json` into PostgreSQL (`processing_status = 'pending'`).
+* Enqueues BullMQ processing jobs for each corpus image.
+* The background worker extracts validated structured metadata (`LocalVisionProvider`), generates 1536-dimensional embeddings (`GeminiEmbeddingProvider`), and persists them to `image_embeddings`.
+* Prepares the database with the complete searchable image corpus required for semantic retrieval and evaluation.
+
+### 4. Run tests and evaluation
 
 ```bash
 npm run typecheck
 npm run test:unit
 npm run test:integration
-```
-
-### 6. Run the retrieval evaluation
-
-```bash
 npm run evaluate:retrieval
 ```
 
@@ -67,10 +69,36 @@ To run the threshold calibration experiment:
 npm run evaluate:retrieval:calibrate
 ```
 
-### 7. Where to look
+### 5. Alternative local development setup (host-based)
+
+If running the Node application directly on your host machine rather than inside Docker containers:
+
+1. **Start infrastructure only**:
+   ```bash
+   docker compose up -d postgres redis
+   ```
+2. **Apply database migrations manually (if using an existing volume without initdb)**:
+   ```bash
+   docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/001_enable_extensions.sql
+   docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/002_create_core_tables.sql
+   docker compose exec -T postgres psql -U flyrank -d flyrank < migrations/003_create_indexes.sql
+   ```
+3. **Install dependencies and build**:
+   ```bash
+   npm ci
+   npm run build
+   ```
+4. **Start API and worker on host**:
+   ```bash
+   npm start
+   npm run worker:image-processing
+   ```
+
+### 6. Where to look
 
 If you’d like to see how the core system works, these are the best places to start:
 
+* `docs/DESIGN.md` — system design document
 * `src/domain/mismatch-guard.ts` — deterministic image/post mismatch guard
 * `src/domain/guard-policy.ts` — centralized guard thresholds
 * `src/application/semantic-image-retrieval.ts` — semantic retrieval and matching workflow
@@ -207,8 +235,12 @@ named volume named `postgres_data`.
 ## Apply migrations
 
 Migrations are plain SQL and are intentionally kept dependency-free.
-Apply them in filename order from the repository root after PostgreSQL
-is healthy.
+When starting with `docker compose up -d`, `migrations/` is mounted into
+`/docker-entrypoint-initdb.d:ro` so fresh databases initialize automatically
+on startup.
+
+To apply or re-run them manually from the repository root after PostgreSQL
+is healthy:
 
 The commands below use the documented local defaults. If you override
 the database name or user, replace `flyrank` in the commands

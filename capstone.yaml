@@ -15,10 +15,7 @@ persistence:
   embedding_model: gemini-embedding-2
   embedding_dimension: 1536
 
-run:
-  infrastructure: docker compose up -d postgres redis
-  api: npm start
-  worker: npm run worker:image-processing
+run: docker compose up -d
 
 seed:
   corpus: node --env-file=.env scripts/process-image-corpus.mjs
